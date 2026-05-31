@@ -1,0 +1,24 @@
+services:
+  backend:
+    build: ./backend
+    container_name: week4_backend
+    ports:
+      - "8000:8000"
+    networks:
+      - week4_network
+
+  frontend:
+    build: ./frontend
+    container_name: week4_frontend
+    ports:
+      - "8080:8000"
+    environment:
+      - BACKEND_URL=${BACKEND_URL}
+    depends_on:
+      - backend
+    networks:
+      - week4_network
+
+networks:
+  week4_network:
+    driver: bridge
