@@ -17,3 +17,9 @@ def landing_page(request: Request):
 	return templates.TemplateResponse(request=request,
 								   name="home.html",
 								   context={"backend_url": backend_url})
+
+@app.get("/result.html")
+def result_page(request: Request):
+	return templates.TemplateResponse(request=request,
+								   name="result.html",
+								   context={"backend_url": backend_url})

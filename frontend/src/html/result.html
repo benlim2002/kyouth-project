@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Recommendations</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .top-card {
+            border: 2px solid #0d6efd;
+            border-radius: 18px;
+        }
+
+        .normal-card {
+            border-radius: 16px;
+        }
+
+        .score-badge {
+            font-size: 0.9rem;
+        }
+
+        .section-title {
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container py-5">
+
+    <div class="mb-4">
+        <h1 class="fw-bold">Your Property Recommendations</h1>
+        <p class="text-muted">
+            Ranked based on your budget, property preference, market value, and location insights.
+        </p>
+    </div>
+
+    <!-- User Input Summary -->
+   <div class="mb-4">
+		<p class="text-muted mb-2">
+			Recommendations based on your preferences
+		</p>
+
+		<div id="userInputSummary" class="d-flex flex-wrap gap-2">
+		</div>
+	</div>
+
+    <!-- Top Recommendation -->
+    <div id="topRecommendation"></div>
+
+    <!-- Other Recommendations -->
+    <h4 class="section-title mt-5 mb-3">Other Suitable Options</h4>
+    <div class="row" id="otherRecommendations"></div>
+
+    <!-- AI Explanation -->
+    <div class="card shadow-sm mt-5 border-primary">
+        <div class="card-body">
+            <h4 class="section-title">AI Decision Explanation</h4>
+            <p id="aiExplanation" class="mb-0"></p>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="/" class="btn btn-outline-secondary">
+            Search Again
+        </a>
+    </div>
+
+</div>
+
+<script>
+let userInput = JSON.parse(localStorage.getItem("userInput"));
+// let result = JSON.parse(localStorage.getItem("searchResults"));
+
+/* Temporary mock data if backend is not ready */
+if (!userInput) {
+    userInput = {
+        budget: 500000,
+        state: "Selangor",
+        property_type: "Condominium"
+    };
+}
+
+// if (!result) {
+    result = {
+        recommendations: [
+            {
+                township: "Bandar Tun Razak",
+				area:"Cheras",
+                state: "Selangor",
+                type: "Condominium",
+                median_price: 450000,
+                median_psf: 420,
+                score: 88,
+                perks: "Near MRT, mature township, many food options"
+            },
+            {
+                township: "Bandar Baru Bangi",
+				area:"Kajang",
+                state: "Selangor",
+                type: "Condominium",
+                median_price: 390000,
+                median_psf: 350,
+                score: 82,
+                perks: "More affordable, quieter area, larger unit potential"
+            },
+            {
+                township: "Taman Subang Mewah",
+				area:"Subang Jaya",
+                state: "Selangor",
+                type: "Condominium",
+                median_price: 500000,
+                median_psf: 520,
+                score: 76,
+                perks: "Good accessibility, mature facilities, active market"
+            }
+        ],
+        ai_explanation:
+            "Cheras is ranked first because it fits within the user's budget while offering strong location perks such as MRT access and mature township facilities. Kajang is more affordable, but may have lower accessibility. Subang Jaya has strong amenities but is closer to the budget limit."
+    };
+// }
+
+/* Show user input */
+document.getElementById("userInputSummary").innerHTML = `
+    <span class="badge rounded-pill text-bg-light border fs-6">
+        Budget: RM ${userInput.budget.toLocaleString()}
+    </span>
+
+    <span class="badge rounded-pill text-bg-light border fs-6">
+        ${userInput.state}
+    </span>
+
+    <span class="badge rounded-pill text-bg-light border fs-6">
+        ${userInput.property_type}
+    </span>
+`;
+
+/* Top recommendation */
+const topProperty = result.recommendations[0];
+
+document.getElementById("topRecommendation").innerHTML = `
+    <h4 class="section-title mb-3">Top Recommendation</h4>
+
+    <div class="card shadow top-card">
+        <div class="card-body p-4">
+
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <span class="badge bg-primary mb-2">Rank #1</span>
+                    <h3 class="fw-bold">${topProperty.township}</h3>
+                    <p class="text-muted mb-0">${topProperty.area}, ${topProperty.state} · ${topProperty.type}</p>
+                </div>
+
+                <span class="badge bg-success score-badge">
+                    Score: ${topProperty.score}/100
+                </span>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <strong>Median Price</strong>
+                    <p>RM ${topProperty.median_price.toLocaleString()}</p>
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Price per sqft</strong>
+                    <p>RM ${topProperty.median_psf}</p>
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Main Perks</strong>
+                    <p>${topProperty.perks}</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+`;
+
+/* Other recommendations */
+const otherDiv = document.getElementById("otherRecommendations");
+
+result.recommendations.slice(1, 3).forEach((property, index) => {
+    otherDiv.innerHTML += `
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm normal-card h-100">
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+                        <h5 class="fw-bold">
+                            Rank #${index + 2}: ${property.township}
+                        </h5>
+
+                        <span class="badge bg-secondary">
+                            ${property.score}/100
+                        </span>
+                    </div>
+
+                    <p class="text-muted"> ${property.area}, ${property.state} · ${property.type}</p>
+
+                    <p class="mb-1">
+                        <strong>Median Price:</strong>
+                        RM ${property.median_price.toLocaleString()}
+                    </p>
+
+                    <p class="mb-1">
+                        <strong>PSF:</strong>
+                        RM ${property.median_psf}
+                    </p>
+
+                    <p class="mb-0">
+                        <strong>Perks:</strong>
+                        ${property.perks}
+                    </p>
+
+                </div>
+            </div>
+        </div>
+    `;
+});
+
+/* AI explanation */
+document.getElementById("aiExplanation").textContent = result.ai_explanation;
+</script>
+
+</body>
+</html>

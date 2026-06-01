@@ -9,12 +9,20 @@
 
     <style>
         body {
-            background-color: #f8f9fa;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            min-height: 100vh;
         }
 
         .search-card {
-            max-width: 600px;
-            margin: 60px auto;
+            max-width: 650px;
+            margin: 70px auto;
+            border: none;
+            border-radius: 18px;
+        }
+
+        .title-small {
+            color: #6c757d;
+            font-size: 0.95rem;
         }
     </style>
 </head>
@@ -23,35 +31,32 @@
 
 <div class="container">
     <div class="card shadow search-card">
-        <div class="card-body p-4">
+        <div class="card-body p-5">
 
-            <h2 class="card-title text-center mb-4">
-                House Finder
-            </h2>
+            <div class="text-center mb-4">
+                <h2 class="fw-bold">House Finder</h2>
+                <p class="title-small">
+                    Find suitable Malaysian property locations based on your budget and preferences.
+                </p>
+            </div>
 
-            <form id="searchform">
+            <form id="searchForm">
 
-                <!-- Budget -->
                 <div class="mb-3">
-                    <label for="budget" class="form-label">
-                        Budget (RM)
-                    </label>
+                    <label for="budget" class="form-label">Budget (RM)</label>
                     <input
                         type="number"
                         class="form-control"
                         id="budget"
-                        placeholder="Enter your budget"
+                        placeholder="Example: 500000"
+                        required
                     >
                 </div>
 
-                <!-- State -->
                 <div class="mb-3">
-                    <label for="state" class="form-label">
-                        Preferred State
-                    </label>
-
-                    <select class="form-select" id="state">
-                        <option selected disabled>Select a state</option>
+                    <label for="state" class="form-label">Preferred State</label>
+                    <select class="form-select" id="state" required>
+                        <option selected disabled value="">Select a state</option>
                         <option>Johor</option>
                         <option>Kedah</option>
                         <option>Kelantan</option>
@@ -71,14 +76,10 @@
                     </select>
                 </div>
 
-                <!-- Property Type -->
                 <div class="mb-4">
-                    <label for="propertyType" class="form-label">
-                        Property Type
-                    </label>
-
-                    <select class="form-select" id="propertyType">
-                        <option selected disabled>Select a property type</option>
+                    <label for="propertyType" class="form-label">Property Type</label>
+                    <select class="form-select" id="propertyType" required>
+                        <option selected disabled value="">Select a property type</option>
                         <option>Flat</option>
                         <option>Apartment</option>
                         <option>Condominium</option>
@@ -90,7 +91,7 @@
                 </div>
 
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary btn-lg">
                         Find Properties
                     </button>
                 </div>
@@ -102,39 +103,39 @@
 </div>
 
 <script>
-	const BACKEND_URL = "{{ backend_url }}";
-	const form = document.getElementById("searchform");
+const BACKEND_URL = "{{ backend_url }}";
+const form = document.getElementById("searchForm");
 
-	form.addEventListener("submit", async function (event) {
-		event.preventDefault();
-		const budget = document.getElementById("budget").value;
-		const state = document.getElementById("state").value;
-		const propertyType = document.getElementById("propertyType").value;
+form.addEventListener("submit", async function (event) {
+    event.preventDefault();
 
-		const data = {
-			budget: budget,
-			state: state,
-			property_type: propertyType
-		};
-		console.log("Sending data to backend:", data);
+    const userInput = {
+        budget: Number(document.getElementById("budget").value),
+        state: document.getElementById("state").value,
+        property_type: document.getElementById("propertyType").value
+    };
 
-		try 
-		{
-			const response = await fetch(BACKEND_URL, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify(data)
-			});
+    localStorage.setItem("userInput", JSON.stringify(userInput));
 
-			const result = await response.json();
-			console.log("Received response from backend:", result);
-		}	
-		catch (error) 
-		{
-			console.error("Error communicating with backend:", error);
-		}
+    try {
+        const response = await fetch(BACKEND_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(userInput)
+        });
+
+        const result = await response.json();
+
+        localStorage.setItem("searchResults", JSON.stringify(result));
+
+        window.location.href = "result.html";
+
+    } catch (error) {
+        console.error("Error communicating with backend:", error);
+        alert("Failed to get recommendations. Please check backend connection.");
+    }
 });
 </script>
 
