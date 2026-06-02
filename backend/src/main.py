@@ -49,7 +49,6 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 BACKEND_URL = "http://localhost:8000/search"
 MODEL = "gemini-2.5-flash"
 
-
 class SearchRequest(BaseModel):
     budget: float
     state: str
@@ -113,10 +112,10 @@ async def search(body: SearchRequest):
     )
 
     if not properties:
-        return JSONResponse(
-            status_code=404,
-            content={"error": "No properties found matching your criteria."}
-        )
+        return {
+        "recommendations": [],
+        "ai_explanation": "No matching properties found. Try increasing your budget or changing the property type."
+    }
 
     ranked = rank_properties(properties, budget=body.budget, top_n=5)
 
@@ -134,4 +133,4 @@ async def search(body: SearchRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)

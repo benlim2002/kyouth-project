@@ -8,7 +8,7 @@ load_dotenv()
 app = FastAPI()
 templates = Jinja2Templates(directory="src/html")
 
-backend_url = os.getenv("BACKEND_URL")
+backend_url = os.getenv("BACKEND_URL", "http://localhost:8080/search")
 
 @app.get("/")
 def landing_page(request: Request):

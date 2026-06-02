@@ -77,55 +77,7 @@
 
 <script>
 let userInput = JSON.parse(localStorage.getItem("userInput"));
-// let result = JSON.parse(localStorage.getItem("searchResults"));
-
-/* Temporary mock data if backend is not ready */
-if (!userInput) {
-    userInput = {
-        budget: 500000,
-        state: "Selangor",
-        property_type: "Condominium"
-    };
-}
-
-// if (!result) {
-    result = {
-        recommendations: [
-            {
-                township: "Bandar Tun Razak",
-				area:"Cheras",
-                state: "Selangor",
-                type: "Condominium",
-                median_price: 450000,
-                median_psf: 420,
-                score: 88,
-                perks: "Near MRT, mature township, many food options"
-            },
-            {
-                township: "Bandar Baru Bangi",
-				area:"Kajang",
-                state: "Selangor",
-                type: "Condominium",
-                median_price: 390000,
-                median_psf: 350,
-                score: 82,
-                perks: "More affordable, quieter area, larger unit potential"
-            },
-            {
-                township: "Taman Subang Mewah",
-				area:"Subang Jaya",
-                state: "Selangor",
-                type: "Condominium",
-                median_price: 500000,
-                median_psf: 520,
-                score: 76,
-                perks: "Good accessibility, mature facilities, active market"
-            }
-        ],
-        ai_explanation:
-            "Cheras is ranked first because it fits within the user's budget while offering strong location perks such as MRT access and mature township facilities. Kajang is more affordable, but may have lower accessibility. Subang Jaya has strong amenities but is closer to the budget limit."
-    };
-// }
+let result = JSON.parse(localStorage.getItem("searchResults"));
 
 /* Show user input */
 document.getElementById("userInputSummary").innerHTML = `
@@ -142,8 +94,17 @@ document.getElementById("userInputSummary").innerHTML = `
     </span>
 `;
 
+
 /* Top recommendation */
 const topProperty = result.recommendations[0];
+
+if (!topProperty) {
+    document.getElementById("topRecommendation").innerHTML = `
+        <div class="alert alert-warning" role="alert">
+            No recommendations found based on your criteria. Please try adjusting your preferences.
+        </div>
+    `;
+} else {
 
 document.getElementById("topRecommendation").innerHTML = `
     <h4 class="section-title mb-3">Top Recommendation</h4>
@@ -228,6 +189,7 @@ result.recommendations.slice(1, 3).forEach((property, index) => {
 
 /* AI explanation */
 document.getElementById("aiExplanation").textContent = result.ai_explanation;
+}
 </script>
 
 </body>
