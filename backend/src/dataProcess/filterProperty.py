@@ -23,7 +23,7 @@ def filter_properties(budget: float, state: str, property_type: str) -> list[dic
     if not conn:
         return []
 
-    conn.row_factory = sqlite3.Row  # allows dict-like access
+    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
     cursor.execute("""
