@@ -1,4 +1,4 @@
-import sys
+
 import logging
 import importlib.util
 from pathlib import Path
@@ -76,30 +76,12 @@ def build_ai_explanation(ranked: list[dict], budget: float, state: str, property
     """
 
     explanation = prompt_model(MODEL, prompt)
+    logging.info(f"AI EXPLANATION | {explanation}")
 
     if explanation.startswith("Error") or explanation.startswith("An error"):
         return f"{top['township']} is ranked first as it best matches your budget and location preferences among the available options."
 
     return explanation
-
-
-# @app.get("/", response_class=HTMLResponse)
-# async def home(request: Request):
-#     return templates.TemplateResponse(
-#         request=request,
-#         name="home.html",
-#         context={"backend_url": BACKEND_URL}
-#     )
-
-
-# @app.get("/result", response_class=HTMLResponse)
-# async def result(request: Request):
-#     return templates.TemplateResponse(
-#         request=request,
-#         name="result.html",
-#         context={"request": request, "backend_url": BACKEND_URL}
-#     )
-
 
 @app.post("/search")
 async def search(body: SearchRequest):
@@ -129,6 +111,27 @@ async def search(body: SearchRequest):
         "recommendations": ranked,
         "ai_explanation": ai_explanation
     }
+
+
+# @app.get("/", response_class=HTMLResponse)
+# async def home(request: Request):
+#     return templates.TemplateResponse(
+#         request=request,
+#         name="home.html",
+#         context={"backend_url": BACKEND_URL}
+#     )
+
+
+# @app.get("/result", response_class=HTMLResponse)
+# async def result(request: Request):
+#     return templates.TemplateResponse(
+#         request=request,
+#         name="result.html",
+#         context={"request": request, "backend_url": BACKEND_URL}
+#     )
+
+
+
 
 # if __name__ == "__main__":
 #     import uvicorn
