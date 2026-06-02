@@ -3,7 +3,7 @@ services:
     build: ./backend
     container_name: week4_backend
     ports:
-      - "8000:8000"
+      - "8080:8080"
     networks:
       - week4_network
 
@@ -11,7 +11,7 @@ services:
     build: ./frontend
     container_name: week4_frontend
     ports:
-      - "8080:8000"
+      - "8000:8000"
     environment:
       - BACKEND_URL=${BACKEND_URL}
     depends_on:

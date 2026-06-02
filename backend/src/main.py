@@ -43,8 +43,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "frontend" / "src" / "html"
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+# TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend" / "src" / "html"
+# templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 BACKEND_URL = "http://localhost:8000/search"
 MODEL = "gemini-2.5-flash"
@@ -83,22 +83,22 @@ def build_ai_explanation(ranked: list[dict], budget: float, state: str, property
     return explanation
 
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="home.html",
-        context={"backend_url": BACKEND_URL}
-    )
+# @app.get("/", response_class=HTMLResponse)
+# async def home(request: Request):
+#     return templates.TemplateResponse(
+#         request=request,
+#         name="home.html",
+#         context={"backend_url": BACKEND_URL}
+#     )
 
 
-@app.get("/result", response_class=HTMLResponse)
-async def result(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="result.html",
-        context={"request": request, "backend_url": BACKEND_URL}
-    )
+# @app.get("/result", response_class=HTMLResponse)
+# async def result(request: Request):
+#     return templates.TemplateResponse(
+#         request=request,
+#         name="result.html",
+#         context={"request": request, "backend_url": BACKEND_URL}
+#     )
 
 
 @app.post("/search")
@@ -130,7 +130,6 @@ async def search(body: SearchRequest):
         "ai_explanation": ai_explanation
     }
 
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
