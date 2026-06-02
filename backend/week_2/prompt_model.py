@@ -3,13 +3,20 @@ import os
 from google import genai
 from dotenv import load_dotenv
 import requests
+from google.genai import types
 
-SUPPORTED_MODELS = { "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-flash-preview"}
-SUPPORTED_LOCAL_MODELS = {"deepseek-r1:1.5b", "phi3:latest"}
+SUPPORTED_MODELS = { 
+					"gemini-2.5-flash",
+					"gemini-2.5-flash-lite",
+					"gemini-3.1-flash-preview",
+					"gemini-3.1-flash-lite",
+					"gemini-3.5-flash",
+					}
+SUPPORTED_LOCAL_MODELS = {"deepseek-r1:1.5b", "phi3:latest", "gemma4:31b-cloud"}
 
 def prompt_gemini(model: str, prompt: str) -> str:
 
-	load_dotenv()
+	load_dotenv(override=True)
 
 	# ensure the API key is set in the environment variables
 	api_key = os.getenv("GOOGLE_API_KEY")
@@ -30,8 +37,14 @@ def prompt_gemini(model: str, prompt: str) -> str:
 	client = genai.Client(api_key=api_key)
 
 	# generate content
-	response = client.models.generate_content(model=selected_model, contents=prompt)
-
+	response = client.models.generate_content(
+    model=selected_model,
+    contents=prompt,
+    config=types.GenerateContentConfig(
+        #tools=[types.Tool(google_search=types.GoogleSearch())],
+		max_output_tokens=8192
+    )
+)
 	# return the generated text if available, otherwise return an error message
 	if response and response.text:
 		return response.text
