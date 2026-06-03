@@ -88,7 +88,7 @@ Responsible for:
 Create a `.env` file:
 
 ```env
-BACKEND_URL=http://backend:8000/search
+BACKEND_URL=http://backend:8000
 ```
 
 ## Run Using Docker

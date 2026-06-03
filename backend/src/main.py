@@ -1,5 +1,6 @@
 
 import logging
+import sqlite3
 import importlib.util
 from pathlib import Path
 from fastapi import FastAPI, Request
@@ -16,6 +17,8 @@ def _load_module(name, path):
     return mod
 
 _dp = Path(__file__).resolve().parent / "dataProcess"
+BASE_DIR = Path(__file__).resolve().parents[1]
+DB_PATH = BASE_DIR / "data" / "data.db"
 filter_module = _load_module("filterProperty", _dp / "filterProperty.py")
 rank_module = _load_module("rankProperty", _dp / "rankProperty.py")
 
@@ -46,7 +49,7 @@ app.add_middleware(
 # TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend" / "src" / "html"
 # templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
-BACKEND_URL = "http://localhost:8000/search"
+BACKEND_URL = "http://localhost:8000"
 MODEL = "gemini-2.5-flash"
 
 class SearchRequest(BaseModel):
@@ -62,7 +65,7 @@ def build_ai_explanation(ranked: list[dict], budget: float, state: str, property
     top = ranked[0]
     summary_lines = ""
     for i, prop in enumerate(ranked):
-        summary_lines += f"{i+1}. {prop['township']} ({prop['area']}) — RM{prop['median_price']:,}, Score: {prop['score']}/100\n"
+        summary_lines += f"{i+1}. {prop['township']} ({prop['area']}) — RM{prop['median_price']:,}, Score: {prop['score']}/100, Amenities: {prop['amenities']}\n"
 
     prompt = f"""You are a Malaysian real estate advisor.
     A user is looking for a {property_type} in {state} with a budget of RM{budget:,.0f}.
@@ -82,6 +85,78 @@ def build_ai_explanation(ranked: list[dict], budget: float, state: str, property
         return f"{top['township']} is ranked first as it best matches your budget and location preferences among the available options."
 
     return explanation
+
+
+@app.get("/stats")
+def get_stats():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) as total FROM properties")
+    total = cursor.fetchone()["total"]
+
+    cursor.execute("SELECT ROUND(AVG(median_price), 0) as avg_price FROM properties WHERE median_price IS NOT NULL")
+    avg_price = cursor.fetchone()["avg_price"]
+
+    cursor.execute("SELECT ROUND(AVG(median_psf), 0) as avg_psf FROM properties WHERE median_psf IS NOT NULL")
+    avg_psf = cursor.fetchone()["avg_psf"]
+
+    cursor.execute("SELECT COUNT(DISTINCT state) as total_states FROM properties")
+    total_states = cursor.fetchone()["total_states"]
+
+    conn.close()
+    return {
+        "total_properties": int(total),
+        "avg_price": float(avg_price),
+        "avg_psf": float(avg_psf),
+        "total_states": int(total_states)
+    }
+
+
+@app.get("/properties")
+def get_properties(
+    state: str = None,
+    property_type: str = None,
+    min_price: float = None,
+    max_price: float = None,
+    limit: int = 50,
+    offset: int = 0
+):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    query = """
+        SELECT township, area, state, type, tenure, 
+               median_price, median_psf, transactions, 
+               growth_potential, tags 
+        FROM properties WHERE 1=1
+    """
+    params = []
+
+    if state:
+        query += " AND LOWER(state) = LOWER(?)"
+        params.append(state)
+    if property_type:
+        query += " AND LOWER(type) = LOWER(?)"
+        params.append(property_type)
+    if min_price:
+        query += " AND median_price >= ?"
+        params.append(min_price)
+    if max_price:
+        query += " AND median_price <= ?"
+        params.append(max_price)
+
+    query += " ORDER BY transactions DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+
+    cursor.execute(query, params)
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+
+    return {"properties": rows, "count": len(rows)}
+
 
 @app.post("/search")
 async def search(body: SearchRequest):
@@ -104,6 +179,7 @@ async def search(body: SearchRequest):
     # rename tags to perks to match frontend
     for prop in ranked:
         prop["perks"] = prop.pop("tags", "") or ""
+        prop["amenities"] = prop.pop("amenities", "") or ""
 
     ai_explanation = build_ai_explanation(ranked, body.budget, body.state, body.property_type)
 
