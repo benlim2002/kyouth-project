@@ -33,7 +33,7 @@ Ranking Engine
 (Score Calculation)
             ↓
 AI Reasoning Engine
-(Explanation & Trade-off Analysis)
+(Explanation & Compare Properties)
             ↓
 Recommendation Dashboard
 ```
@@ -45,8 +45,6 @@ Recommendation Dashboard
 Responsible for:
 
 * Cleaning property datasets
-* Handling missing values
-* Standardizing property attributes
 * Generating location perks and insights
 
 ### Recommendation Engine
@@ -108,7 +106,7 @@ http://localhost:8000
 Backend API:
 
 ```text
-http://localhost:8080
+http://localhost:8080/search
 ```
 
 ---
@@ -129,22 +127,16 @@ The system filters suitable properties from the database.
 
 The system evaluates multiple factors and ranks the top matching properties.
 
-### AI-Powered Explanation
+### AI-Powered Recommendation Explanation
 
-For each recommendation, the AI explains:
+After the recommendation engine ranks the filtered properties, the AI generates a natural-language explanation for the user.
 
-* Why the location is suitable
-* Strengths of the recommendation
-* Potential drawbacks
+The AI explains:
 
-### Trade-off Analysis
-
-Users can understand the differences between recommended locations, such as:
-
-* Affordability
-* Market activity
-* Value per square foot
-* Location perks
+- Why the top-ranked property is recommended
+- How it aligns with the user's budget and preferences
+- How it compares to the other shortlisted options
+- Key factors that contributed to its ranking
 
 ### Property Insights
 
@@ -218,6 +210,10 @@ Other factors such as school accessibility, crime rates, and transportation netw
 ## Static Property Data
 
 The system uses historical property statistics and does not include real-time property listings.
+
+## AI-Generated Content Accuracy
+
+The AI-generated explanations and location highlights may not always reflect the latest conditions or developments within a township. 
 
 ---
 
