@@ -25,10 +25,14 @@ def score_property(row: dict, budget: float) -> int:
 
     # transaction volume (40pts) — normalised, not arbitrary
     transactions = row.get("transactions", 0) or 0
-    if transactions >= 200:    score += 40
-    elif transactions >= 100:  score += 30
-    elif transactions >= 50:   score += 20
-    elif transactions >= 20:   score += 10
+    if transactions >= 200:    
+        score += 40
+    elif transactions >= 100:  
+        score += 30
+    elif transactions >= 50:   
+        score += 20
+    elif transactions >= 20:   
+        score += 10
 
     # growth potential (30pts)
     growth = (row.get("growth_potential") or "").strip().upper()

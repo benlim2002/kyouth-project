@@ -71,9 +71,9 @@ Responsible for:
 Responsible for:
 
 * Collecting user preferences
-* Displaying recommendations
-* Showing ranking results
+* Displaying recommendations and comparison data
 * Presenting AI-generated explanations
+* Providing a chatbot interface for users
 
 ---
 
@@ -89,7 +89,7 @@ Responsible for:
 Create a `.env` file:
 
 ```env
-BACKEND_URL=http://backend:8000
+BACKEND_URL=http://localhost:8080
 ```
 
 ## Run Using Docker
@@ -139,7 +139,6 @@ The AI explains:
 - Why the top-ranked property is recommended
 - How it aligns with the user's budget and preferences
 - How it compares to the other shortlisted options
-- Key factors that contributed to its ranking
 
 ### Property Insights
 
@@ -176,21 +175,6 @@ This allows:
 * Fast filtering
 * Consistent ranking
 * Reproducible results
-
-## Frontend and Backend Separation
-
-The application follows a client-server architecture:
-
-Frontend:
-
-* User interface
-* Recommendation display
-
-Backend:
-
-* Data processing
-* Ranking logic
-* AI integration
 
 ---
 

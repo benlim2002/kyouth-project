@@ -114,7 +114,6 @@ def enrich(dry_run=False):
         conn.close()
         return
     
-    import os
     logging.info(f"ENRICH | 🔍 Found {len(rows)} unenriched rows")
     logging.info(f"ENRICH | 📦 Batch size: {BATCH_SIZE} → ~{-(-len(rows) // BATCH_SIZE)} API calls")
 
@@ -130,8 +129,8 @@ def enrich(dry_run=False):
         prompt = build_batch_prompt(batch)
 
         if dry_run:
-            logging.info(f"ENRICH | 🧪 Dry run — skipping API call")
-            logging.info(f"ENRICH | Prompt preview:\n{prompt[:300]}...")
+            logging.info("ENRICH | 🧪 Dry run — skipping API call")
+            logging.info("ENRICH | Prompt preview:\n{prompt[:300]}...")
             continue
 
         MAX_RETRIES = 3

@@ -3,17 +3,11 @@ import logging
 import sqlite3
 import importlib.util
 from pathlib import Path
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-
-# TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend" / "src" / "html"
-# templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-# import filterProperty and rankProperty from dataProcess
 def _load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
@@ -52,10 +46,6 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "data" / "img")), name="static")
 
-# TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend" / "src" / "html"
-# templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
-BACKEND_URL = "http://localhost:8000"
 MODEL = "gemini-2.5-flash"
 
 class SearchRequest(BaseModel):
