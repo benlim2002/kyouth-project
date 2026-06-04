@@ -7,14 +7,26 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body {
             background: linear-gradient(135deg, #f8f9fa, #e9ecef);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        }
+
+        .container {
+            max-width: 900px !important;
+        }
+
+        .carousel-caption {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            padding: 0.4rem 0.7rem;
+            max-width: 400px;
+            margin: 0 auto;
+            left: 0;
+            right: 0;
         }
 
         .search-card {
@@ -28,6 +40,8 @@
             color: #6c757d;
             font-size: 0.95rem;
         }
+
+        
     </style>
 </head>
 
@@ -39,6 +53,38 @@
     <p class="title-small mb-5">
         Explore Malaysian property data and find your ideal home.
     </p>
+
+    <div id="propertyCarousel" class="carousel slide mb-5" data-bs-ride="carousel" style="max-width:800px; margin:0 auto;">
+        <div class="carousel-inner rounded-4 shadow">
+            <div class="carousel-item active">
+                <img src="http://localhost:8080/static/kuala-lumpur-investment.jpg" class="d-block w-100" style="object-fit:cover; height:350px;" alt="Property 1">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Kuala Lumpur</h5>
+                    <p>Malaysia's property hub</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="http://localhost:8080/static/penang-investment.jpeg" class="d-block w-100" style="object-fit:cover; height:350px;" alt="Property 2">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Penang</h5>
+                    <p>Heritage meets modern living</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="http://localhost:8080/static/johor-bahru-investment.jpg" class="d-block w-100" style="object-fit:cover; height:350px;" alt="Property 3">
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Johor Bahru</h5>
+                    <p>Growing investment destination</p>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#propertyCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+        </button>
+    </div>
 
     <div class="row text-center mb-5" id="statsRow">
         <div class="col-6 col-md-3">
@@ -55,7 +101,7 @@
         </div>
         <div class="col-6 col-md-3">
             <h3 class="fw-bold" id="statStates">—</h3>
-            <p class="text-muted small">States Covered</p>
+            <p class="text-muted small">States and Federal Territories</p>
         </div>
     </div>
 
@@ -64,6 +110,31 @@
         Find Your House
     </button>   
 
+    <h5 class="fw-bold text-start mt-4 mb-4" style="max-width: 800px; margin: 0 auto;">Market Insights</h5>
+    <div class="row mb-4 align-items-stretch" style="max-width: 800px; margin: 0 auto;">
+        <div class="col-md-8 d-flex flex-column">
+            <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 flex-fill">
+                <p class="text-muted small text-start mb-2">Properties by State</p>
+                <canvas id="chartByState" height="140"></canvas>
+            </div>
+            <div class="card border-0 shadow-sm rounded-4 p-3 flex-fill">
+                <p class="text-muted small text-start mb-2">Avg. Price by Property Type (RM)</p>
+                <canvas id="chartByType" height="140"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4 d-flex">
+            <div class="card border-0 shadow-sm rounded-4 p-3 w-100">
+                <p class="text-muted small text-start mb-2">Growth Potential</p>
+                <canvas id="chartGrowth"></canvas>
+                <hr>
+                <div class="text-start mt-2">
+                    <p class="mb-1 small text-center"><span class="badge bg-success">HIGH</span> <span id="growthHigh">—</span> properties</p>
+                    <p class="mb-1 small text-center"><span class="badge bg-warning text-dark">MED</span> <span id="growthMed">—</span> properties</p>
+                    <p class="mb-0 small text-center"><span class="badge bg-danger">LOW</span> <span id="growthLow">—</span> properties</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class = "modal fade" id="searchModal" tabindex="-1">
@@ -144,6 +215,7 @@
 
 <script>
 const BACKEND_URL = "{{ backend_url }}";
+localStorage.setItem("backendUrl", BACKEND_URL);
 const form = document.getElementById("searchForm");
 
 
@@ -170,6 +242,91 @@ async function loadStats() {
 }
 
 loadStats();
+
+async function loadCharts() {
+    try {
+        const res = await fetch(BACKEND_URL + "/chart-data");
+        const data = await res.json();
+
+        const COLORS = [
+            "#0d6efd","#6610f2","#6f42c1","#d63384","#dc3545",
+            "#fd7e14","#ffc107","#198754","#20c997","#0dcaf0",
+            "#0a58ca","#087990","#146c43","#9c1a4a","#842029"
+        ];
+
+        new Chart(document.getElementById("chartByState"), {
+            type: "bar",
+            data: {
+                labels: data.by_state.map(d => d.state),
+                datasets: [{ label: "Properties", data: data.by_state.map(d => d.count), backgroundColor: COLORS, borderRadius: 4 }]
+            },
+            options: {
+                indexAxis: "y",
+                plugins: { legend: { display: false } },
+                scales: { x: { grid: { display: false } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } }
+            }
+        });
+
+        const growthOrder = ["HIGH", "MED", "LOW"];
+        const growthColors = { HIGH: "#198754", MED: "#ffc107", LOW: "#dc3545" };
+        const growthSorted = growthOrder.map(g => data.by_growth.find(d => d.growth === g) || { growth: g, count: 0 });
+        new Chart(document.getElementById("chartGrowth"), {
+            type: "doughnut",
+            data: {
+                labels: growthSorted.map(d => d.growth),
+                datasets: [{ data: growthSorted.map(d => d.count), backgroundColor: growthSorted.map(d => growthColors[d.growth]), borderWidth: 2 }]
+            },
+            options: { plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } }, cutout: "65%" }
+        });
+
+        document.getElementById("growthHigh").textContent = growthSorted.find(d => d.growth === "HIGH")?.count ?? 0;
+        document.getElementById("growthMed").textContent = growthSorted.find(d => d.growth === "MED")?.count ?? 0;
+        document.getElementById("growthLow").textContent = growthSorted.find(d => d.growth === "LOW")?.count ?? 0;
+
+        new Chart(document.getElementById("chartByType"), {
+            type: "bar",
+            data: {
+                labels: data.by_type.map(d => d.type),
+                datasets: [{ label: "Avg Price (RM)", data: data.by_type.map(d => d.avg_price), backgroundColor: COLORS, borderRadius: 4 }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                    y: { grid: { display: false }, ticks: { font: { size: 10 }, callback: v => "RM " + (v / 1000).toFixed(0) + "k" } }
+                }
+            }
+        });
+
+        const rangeOrder = ["Under 300k", "300k - 500k", "500k - 700k", "700k - 1M", "Above 1M"];
+        const rangeSorted = rangeOrder.map(r => data.by_price_range.find(d => d.range === r) || { range: r, count: 0 });
+        new Chart(document.getElementById("chartPriceRange"), {
+            type: "pie",
+            data: {
+                labels: rangeSorted.map(d => d.range),
+                datasets: [{ data: rangeSorted.map(d => d.count), backgroundColor: ["#198754","#0d6efd","#ffc107","#fd7e14","#dc3545"], borderWidth: 2 }]
+            },
+            options: { plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } }
+        });
+
+        new Chart(document.getElementById("chartTransactions"), {
+            type: "bar",
+            data: {
+                labels: data.by_transactions.map(d => d.state),
+                datasets: [{ label: "Avg Transactions", data: data.by_transactions.map(d => d.avg_transactions), backgroundColor: "#0d6efd", borderRadius: 4 }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
+            }
+        });
+
+    } catch (e) {
+        console.error("Failed to load chart data:", e);
+    }
+}
+
+loadCharts();
 
 
 
