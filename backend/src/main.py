@@ -179,7 +179,6 @@ async def search(body: SearchRequest):
     # rename tags to perks to match frontend
     for prop in ranked:
         prop["perks"] = prop.pop("tags", "") or ""
-        prop["amenities"] = prop.pop("amenities", "") or ""
 
     ai_explanation = build_ai_explanation(ranked, body.budget, body.state, body.property_type)
 
