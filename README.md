@@ -35,6 +35,9 @@ Ranking Engine
 AI Reasoning Engine
 (Explanation & Compare Properties)
             ↓
+Follow-up Questions
+(Based on AI Reasoning Engine response and User Input)
+            ↓
 Recommendation Dashboard
 ```
 
