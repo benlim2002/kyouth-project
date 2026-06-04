@@ -7,8 +7,12 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+
+# TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend" / "src" / "html"
+# templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 # import filterProperty and rankProperty from dataProcess
 def _load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -46,6 +50,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "data" / "img")), name="static")
+
 # TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend" / "src" / "html"
 # templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
@@ -56,6 +62,9 @@ class SearchRequest(BaseModel):
     budget: float
     state: str
     property_type: str
+
+class AskRequest(BaseModel):
+    query: str
 
 
 def build_ai_explanation(ranked: list[dict], budget: float, state: str, property_type: str) -> str:
@@ -188,26 +197,53 @@ async def search(body: SearchRequest):
     }
 
 
-# @app.get("/", response_class=HTMLResponse)
-# async def home(request: Request):
-#     return templates.TemplateResponse(
-#         request=request,
-#         name="home.html",
-#         context={"backend_url": BACKEND_URL}
-#     )
+@app.get("/chart-data")
+def get_chart_data():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
 
+    # properties by state
+    cursor.execute("""
+        SELECT state, COUNT(*) as count
+        FROM properties
+        WHERE state IS NOT NULL
+        GROUP BY state
+        ORDER BY count DESC
+    """)
+    by_state = [{"state": r["state"], "count": r["count"]} for r in cursor.fetchall()]
 
-# @app.get("/result", response_class=HTMLResponse)
-# async def result(request: Request):
-#     return templates.TemplateResponse(
-#         request=request,
-#         name="result.html",
-#         context={"request": request, "backend_url": BACKEND_URL}
-#     )
+    # avg median price by property type
+    cursor.execute("""
+        SELECT type, ROUND(AVG(median_price), 0) as avg_price
+        FROM properties
+        WHERE type IN ('Flat', 'Apartment', 'Condominium', 'Terrace House', 'Cluster House', 'Semi D', 'Bungalow')
+        AND median_price IS NOT NULL
+        GROUP BY type
+        ORDER BY avg_price DESC
+    """)
+    by_type = [{"type": r["type"], "avg_price": r["avg_price"]} for r in cursor.fetchall()]
 
+    # growth potential distribution
+    cursor.execute("""
+        SELECT growth_potential, COUNT(*) as count
+        FROM properties
+        WHERE growth_potential IS NOT NULL
+        GROUP BY growth_potential
+    """)
+    by_growth = [{"growth": r["growth_potential"], "count": r["count"]} for r in cursor.fetchall()]
 
+    conn.close()
 
+    return {
+        "by_state": by_state,
+        "by_type": by_type,
+        "by_growth": by_growth,
+    }
 
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+@app.post("/ask")
+def ask(body: AskRequest):
+    if not body.query.strip():
+        return {"answer": "Please ask a question."}
+    answer = prompt_model(MODEL, body.query)
+    return {"answer": answer}

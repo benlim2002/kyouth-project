@@ -6,6 +6,7 @@
     <title>Property Recommendations</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body {
@@ -59,13 +60,31 @@
     <h4 class="section-title mt-5 mb-3">Other Suitable Options</h4>
     <div class="row" id="otherRecommendations"></div>
 
+    <!-- Added new charts here -->
+    <h4 class="section-title mt-5 mb-3">Property Comparison</h4>
+    <div class="row mb-4">
+        <div class="col-md-12 mb-6">
+            <div class="card shadow-sm rounded-4 p-3">
+                <p class="text-muted small mb-2">Median Price Comparison (RM)</p>
+                <canvas id="chartPrices" height="260"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- AI Explanation -->
     <div class="card shadow-sm mt-5 border-primary">
         <div class="card-body">
             <h4 class="section-title">AI Decision Explanation</h4>
             <p id="aiExplanation" class="mb-0"></p>
+            <hr>
+            <div id="chatHistory" class="mb-3"></div>
+            <div class="d-flex gap-2">
+                <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Ask a follow-up question...">
+                <button class="btn btn-primary btn-sm" onclick="sendChat()">Ask</button>
+            </div>
         </div>
     </div>
+
 
     <div class="mt-4">
         <a href="/" class="btn btn-outline-secondary">
@@ -78,6 +97,7 @@
 <script>
 let userInput = JSON.parse(localStorage.getItem("userInput"));
 let result = JSON.parse(localStorage.getItem("searchResults"));
+const BACKEND_URL = "{{ backend_url }}";
 
 /* Show user input */
 document.getElementById("userInputSummary").innerHTML = `
@@ -200,6 +220,118 @@ result.recommendations.slice(1, 3).forEach((property, index) => {
 /* AI explanation */
 document.getElementById("aiExplanation").textContent = result.ai_explanation;
 }
+
+// only render charts if there are recommendations
+if (result.recommendations && result.recommendations.length > 0) {
+    const props = result.recommendations.slice(0, 5);
+    const labels = props.map(p => p.township);
+
+    const COLORS = [
+        "#0d6efd","#6610f2","#6f42c1","#d63384","#dc3545"
+    ];
+
+    // price comparison
+    new Chart(document.getElementById("chartPrices"), {
+        type: "line",
+        data: {
+            labels,
+            datasets: [{
+                label: "Median Price (RM)",
+                data: props.map(p => p.median_price),
+                backgroundColor: COLORS,
+                borderRadius: 6
+            },
+                {
+            label: "Your Budget",
+            data: props.map(() => userInput.budget), // flat line
+            borderColor: "#dc3545",
+            borderDash: [5, 5], // dashed line
+            pointRadius: 0,
+            fill: false
+        }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    grid: { display: false },
+                    ticks: { callback: v => "RM " + (v / 1000).toFixed(0) + "k" }
+                },
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+}
+
+
+const chatHistory = [];
+
+async function sendChat() {
+    const input = document.getElementById("chatInput");
+    const query = input.value.trim();
+    if (!query) return;
+    input.value = "";
+
+    appendChat("user", query);
+    chatHistory.push({ role: "user", content: query });
+
+    const context = result.recommendations.slice(0, 5).map((p, i) =>
+        `${i+1}. ${p.township} (${p.area}, ${p.state}) — RM${p.median_price.toLocaleString()}, Score: ${p.score}/100, Amenities: ${p.amenities}`
+    ).join("\n");
+
+    const fullPrompt = `You are a Malaysian real estate advisor.
+    The user was looking for a ${userInput.property_type} in ${userInput.state} with budget RM${userInput.budget.toLocaleString()}.
+
+    Recommendations:
+    ${context}
+
+    Conversation:
+    ${chatHistory.map(m => `${m.role}: ${m.content}`).join("\n")}
+
+    Answer concisely.`;
+
+    try {
+        const res = await fetch(BACKEND_URL + "/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: fullPrompt })
+        });
+        const data = await res.json();
+        const answer = data.answer ?? "No response.";
+        chatHistory.push({ role: "assistant", content: answer });
+        appendChat("assistant", answer);
+    } catch (e) {
+        appendChat("assistant", "Failed to get response.");
+    }
+}
+
+function formatText(text) {
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // bold
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')              // italic
+        .replace(/\n\*/g, '<br>•')                          // bullet points
+        .replace(/\n/g, '<br>');                            // line breaks
+}
+
+function appendChat(role, text) {
+    const div = document.getElementById("chatHistory");
+    const isUser = role === "user";
+    div.innerHTML += `
+        <div class="d-flex ${isUser ? "justify-content-end" : "justify-content-start"} mb-2">
+            <div class="px-3 py-2 rounded-3" style="
+                max-width: 75%;
+                background: ${isUser ? "#0d6efd" : "#f0f0f0"};
+                color: ${isUser ? "white" : "black"};
+                font-size: 0.88rem;
+            ">${formatText(text)}</div>
+        </div>
+    `;
+    div.scrollTop = div.scrollHeight;
+}
+
+document.getElementById("chatInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") sendChat();
+});
 </script>
 
 </body>
