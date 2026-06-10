@@ -3,9 +3,10 @@ services:
     build: ./backend
     container_name: week4_backend
     ports:
-      - "8080:8080"
+      - "${PORT}:${PORT}"
     environment:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - PORT=${PORT}
     networks:
       - week4_network
 
