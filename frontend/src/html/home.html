@@ -109,32 +109,6 @@
     <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#searchModal">
         Find Your House
     </button>   
-
-    <h5 class="fw-bold text-start mt-4 mb-4" style="max-width: 800px; margin: 0 auto;">Market Insights</h5>
-    <div class="row mb-4 align-items-stretch" style="max-width: 800px; margin: 0 auto;">
-        <div class="col-md-8 d-flex flex-column">
-            <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 flex-fill">
-                <p class="text-muted small text-start mb-2">Properties by State</p>
-                <canvas id="chartByState" height="140"></canvas>
-            </div>
-            <div class="card border-0 shadow-sm rounded-4 p-3 flex-fill">
-                <p class="text-muted small text-start mb-2">Avg. Price by Property Type (RM)</p>
-                <canvas id="chartByType" height="140"></canvas>
-            </div>
-        </div>
-        <div class="col-md-4 d-flex">
-            <div class="card border-0 shadow-sm rounded-4 p-3 w-100">
-                <p class="text-muted small text-start mb-2">Growth Potential</p>
-                <canvas id="chartGrowth"></canvas>
-                <hr>
-                <div class="text-start mt-2">
-                    <p class="mb-1 small text-center"><span class="badge bg-success">HIGH</span> <span id="growthHigh">—</span> properties</p>
-                    <p class="mb-1 small text-center"><span class="badge bg-warning text-dark">MED</span> <span id="growthMed">—</span> properties</p>
-                    <p class="mb-0 small text-center"><span class="badge bg-danger">LOW</span> <span id="growthLow">—</span> properties</p>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <div class = "modal fade" id="searchModal" tabindex="-1">
@@ -152,7 +126,7 @@
                 <form id="searchForm">
 
                     <div class="mb-3">
-                        <label for="budget" class="form-label">Budget (RM)</label>
+                        <label for="budget" style="font-weight: bold;">Budget (RM)</label>
                         <input
                             type="number"
                             class="form-control"
@@ -163,7 +137,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="state" class="form-label">Preferred State</label>
+                        <label for="state" style="font-weight: bold;">Preferred State</label>
                         <select class="form-select" id="state" required>
                             <option selected disabled value="">Select a state</option>
                             <option>Johor</option>
@@ -187,15 +161,8 @@
 
                     <div class="mb-4">
                         <label for="propertyType" class="form-label">Property Type</label>
-                        <select class="form-select" id="propertyType" required>
-                            <option selected disabled value="">Select a property type</option>
-                            <option>Flat</option>
-                            <option>Apartment</option>
-                            <option>Condominium</option>
-                            <option>Terrace House</option>
-                            <option>Cluster House</option>
-                            <option>Semi D</option>
-                            <option>Bungalow</option>
+                        <select class="form-select" id="propertyType" required disabled>
+                            <option selected disabled value="">Select a state first</option>
                         </select>
                     </div>
 
@@ -243,91 +210,28 @@ async function loadStats() {
 
 loadStats();
 
-async function loadCharts() {
+
+document.getElementById("state").addEventListener("change", async function () {
+    const state = this.value;
+    const typeSelect = document.getElementById("propertyType");
+
+    typeSelect.disabled = true;
+    typeSelect.innerHTML = `<option selected disabled value="">Loading...</option>`;
+
     try {
-        const res = await fetch(BACKEND_URL + "/chart-data");
+        const res = await fetch(BACKEND_URL + "/property-types?state=" + encodeURIComponent(state));
         const data = await res.json();
 
-        const COLORS = [
-            "#0d6efd","#6610f2","#6f42c1","#d63384","#dc3545",
-            "#fd7e14","#ffc107","#198754","#20c997","#0dcaf0",
-            "#0a58ca","#087990","#146c43","#9c1a4a","#842029"
-        ];
-
-        new Chart(document.getElementById("chartByState"), {
-            type: "bar",
-            data: {
-                labels: data.by_state.map(d => d.state),
-                datasets: [{ label: "Properties", data: data.by_state.map(d => d.count), backgroundColor: COLORS, borderRadius: 4 }]
-            },
-            options: {
-                indexAxis: "y",
-                plugins: { legend: { display: false } },
-                scales: { x: { grid: { display: false } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } }
-            }
+        typeSelect.innerHTML = `<option selected disabled value="">Select a property type</option>`;
+        data.property_types.forEach(type => {
+            typeSelect.innerHTML += `<option>${type}</option>`;
         });
-
-        const growthOrder = ["HIGH", "MED", "LOW"];
-        const growthColors = { HIGH: "#198754", MED: "#ffc107", LOW: "#dc3545" };
-        const growthSorted = growthOrder.map(g => data.by_growth.find(d => d.growth === g) || { growth: g, count: 0 });
-        new Chart(document.getElementById("chartGrowth"), {
-            type: "doughnut",
-            data: {
-                labels: growthSorted.map(d => d.growth),
-                datasets: [{ data: growthSorted.map(d => d.count), backgroundColor: growthSorted.map(d => growthColors[d.growth]), borderWidth: 2 }]
-            },
-            options: { plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } }, cutout: "65%" }
-        });
-
-        document.getElementById("growthHigh").textContent = growthSorted.find(d => d.growth === "HIGH")?.count ?? 0;
-        document.getElementById("growthMed").textContent = growthSorted.find(d => d.growth === "MED")?.count ?? 0;
-        document.getElementById("growthLow").textContent = growthSorted.find(d => d.growth === "LOW")?.count ?? 0;
-
-        new Chart(document.getElementById("chartByType"), {
-            type: "bar",
-            data: {
-                labels: data.by_type.map(d => d.type),
-                datasets: [{ label: "Avg Price (RM)", data: data.by_type.map(d => d.avg_price), backgroundColor: COLORS, borderRadius: 4 }]
-            },
-            options: {
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                    y: { grid: { display: false }, ticks: { font: { size: 10 }, callback: v => "RM " + (v / 1000).toFixed(0) + "k" } }
-                }
-            }
-        });
-
-        const rangeOrder = ["Under 300k", "300k - 500k", "500k - 700k", "700k - 1M", "Above 1M"];
-        const rangeSorted = rangeOrder.map(r => data.by_price_range.find(d => d.range === r) || { range: r, count: 0 });
-        new Chart(document.getElementById("chartPriceRange"), {
-            type: "pie",
-            data: {
-                labels: rangeSorted.map(d => d.range),
-                datasets: [{ data: rangeSorted.map(d => d.count), backgroundColor: ["#198754","#0d6efd","#ffc107","#fd7e14","#dc3545"], borderWidth: 2 }]
-            },
-            options: { plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } } }
-        });
-
-        new Chart(document.getElementById("chartTransactions"), {
-            type: "bar",
-            data: {
-                labels: data.by_transactions.map(d => d.state),
-                datasets: [{ label: "Avg Transactions", data: data.by_transactions.map(d => d.avg_transactions), backgroundColor: "#0d6efd", borderRadius: 4 }]
-            },
-            options: {
-                plugins: { legend: { display: false } },
-                scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
-            }
-        });
+        typeSelect.disabled = false;
 
     } catch (e) {
-        console.error("Failed to load chart data:", e);
+        typeSelect.innerHTML = `<option disabled value="">Failed to load types</option>`;
     }
-}
-
-loadCharts();
-
+});
 
 
 form.addEventListener("submit", async function (event) {
@@ -359,6 +263,43 @@ form.addEventListener("submit", async function (event) {
     } catch (error) {
         console.error("Error communicating with backend:", error);
         alert("Failed to get recommendations. Please check backend connection.");
+    }
+});
+
+
+form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const btn = form.querySelector("button[type='submit']");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Finding Properties...`;
+
+    const userInput = {
+        budget: Number(document.getElementById("budget").value),
+        state: document.getElementById("state").value,
+        property_type: document.getElementById("propertyType").value
+    };
+
+    localStorage.setItem("userInput", JSON.stringify(userInput));
+
+    try {
+        const response = await fetch(BACKEND_URL + "/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(userInput)
+        });
+
+        const result = await response.json();
+        localStorage.setItem("searchResults", JSON.stringify(result));
+        window.location.href = "result.html";
+
+    } catch (error) {
+        console.error("Error communicating with backend:", error);
+        alert("Failed to get recommendations. Please check backend connection.");
+
+        // re-enable button if something goes wrong
+        btn.disabled = false;
+        btn.innerHTML = `Find Properties`;
     }
 });
 </script>
