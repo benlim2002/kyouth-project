@@ -7,7 +7,8 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
     <style>
         body {
             background-color: #f8f9fa;
@@ -57,16 +58,44 @@
     <div id="topRecommendation"></div>
 
     <!-- Other Recommendations -->
-    <h4 class="section-title mt-5 mb-3">Other Suitable Options</h4>
+    <h4 class="section-title mt-5 mb-3" id="otherTitle">Other Suitable Options</h4>
     <div class="row" id="otherRecommendations"></div>
 
-    <!-- Added new charts here -->
-    <h4 class="section-title mt-5 mb-3">Property Comparison</h4>
-    <div class="row mb-4">
+    <h4 class="section-title mt-5 mb-3" id="chartTitle">Property Comparison</h4>
+    <div class="row mb-4" id="chartSection">
         <div class="col-md-12 mb-6">
             <div class="card shadow-sm rounded-4 p-3">
                 <p class="text-muted small mb-2">Median Price Comparison (RM)</p>
                 <canvas id="chartPrices" height="260"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-5 mb-3">
+        <h4 class="section-title mb-0">Market Insights</h4>
+        <button class="btn btn-outline-primary btn-sm" id="viewAllBtn">View All Properties</button>
+    </div>
+    <div class="row mb-4 align-items-stretch">
+        <div class="col-md-8 d-flex flex-column">
+            <div class="card shadow-sm rounded-4 p-3 mb-3 flex-fill">
+                <p class="text-muted small mb-2">Areas in Results</p>
+                <canvas id="chartByState" height="140"></canvas>
+            </div>
+            <div class="card shadow-sm rounded-4 p-3 flex-fill">
+                <p class="text-muted small mb-2">Avg. Price by Type in Results</p>
+                <canvas id="chartByType" height="140"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4 d-flex">
+            <div class="card shadow-sm rounded-4 p-3 w-100">
+                <p class="text-muted small mb-2">Growth Potential</p>
+                <canvas id="chartGrowth"></canvas>
+                <hr>
+                <div class="text-start mt-2">
+                    <p class="mb-1 small text-center"><span class="badge bg-success">HIGH</span> <span id="growthHigh">—</span> properties</p>
+                    <p class="mb-1 small text-center"><span class="badge bg-warning text-dark">MED</span> <span id="growthMed">—</span> properties</p>
+                    <p class="mb-0 small text-center"><span class="badge bg-danger">LOW</span> <span id="growthLow">—</span> properties</p>
+                </div>
             </div>
         </div>
     </div>
@@ -91,8 +120,8 @@
             Search Again
         </a>
     </div>
-
 </div>
+
 
 <script>
 let userInput = JSON.parse(localStorage.getItem("userInput"));
@@ -119,11 +148,45 @@ document.getElementById("userInputSummary").innerHTML = `
 const topProperty = result.recommendations[0];
 
 if (!topProperty) {
-    document.getElementById("topRecommendation").innerHTML = `
-        <div class="alert alert-warning" role="alert">
-            No recommendations found based on your criteria. Please try adjusting your preferences.
-        </div>
-    `;
+    const closest = result.closest_matches;
+    document.getElementById("otherTitle").style.display = "none";
+    document.getElementById("otherRecommendations").style.display = "none";
+    document.getElementById("chartTitle").style.display = "none";
+    document.getElementById("chartSection").style.display = "none";
+
+    if (!closest || closest.length === 0) {
+        document.getElementById("topRecommendation").innerHTML = `
+            <div class="alert alert-warning" role="alert">
+                No properties found. Try adjusting your budget or location.
+            </div>
+        `;
+    } else {
+        document.getElementById("topRecommendation").innerHTML = `
+            <div class="alert alert-info mb-3">
+                No exact matches found for your budget of <strong>RM ${userInput.budget.toLocaleString()}</strong>. 
+                Here are the closest options:
+            </div>
+            <div class="row">
+                ${closest.map(p => `
+                    <div class="col-md-6 mb-3">
+                        <div class="card shadow-sm normal-card h-100">
+                            <div class="card-body">
+                                <h5 class="fw-bold">${p.township}</h5>
+                                <p class="text-muted">${p.area}, ${p.state} · ${p.type}</p>
+                                <p class="mb-1"><strong>Median Price:</strong> RM ${p.median_price.toLocaleString()}</p>
+                                <p class="mb-1"><strong>PSF:</strong> RM ${p.median_psf}</p>
+                                <p class="mb-1"><strong>Perks:</strong> ${p.perks}</p>
+                                <p class="mb-0"><strong>Amenities:</strong> ${p.amenities}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join("")}
+            </div>
+        `;
+    }
+
+    document.getElementById("aiExplanation").textContent = result.ai_explanation;
+
 } else {
 
 document.getElementById("topRecommendation").innerHTML = `
@@ -165,7 +228,6 @@ document.getElementById("topRecommendation").innerHTML = `
                     <p>${topProperty.amenities}</p>
                 </div>
             </div>
-
         </div>
     </div>
 `;
@@ -210,7 +272,6 @@ result.recommendations.slice(1, 3).forEach((property, index) => {
                         <strong>Amenities:</strong>
                         ${property.amenities}
                     </p>
-
                 </div>
             </div>
         </div>
@@ -221,42 +282,44 @@ result.recommendations.slice(1, 3).forEach((property, index) => {
 document.getElementById("aiExplanation").textContent = result.ai_explanation;
 }
 
-// only render charts if there are recommendations
-if (result.recommendations && result.recommendations.length > 0) {
-    const props = result.recommendations.slice(0, 5);
-    const labels = props.map(p => p.township);
+const chartProps = (result.recommendations && result.recommendations.length > 0)
+    ? result.recommendations.slice(0, 5)
+    : (result.closest_matches && result.closest_matches.length > 0)
+        ? result.closest_matches.slice(0, 5)
+        : null;
 
-    const COLORS = [
-        "#0d6efd","#6610f2","#6f42c1","#d63384","#dc3545"
-    ];
+if (chartProps) {
+    document.getElementById("chartTitle").style.display = "";
+    document.getElementById("chartSection").style.display = "";
 
-    // price comparison
+    const labels = chartProps.map(p => p.township);
+    const barColors = chartProps.map(p =>
+        p.score === null || p.score === undefined ? "#adb5bd" : "#0d6efd"
+    );
+
     new Chart(document.getElementById("chartPrices"), {
         type: "line",
         data: {
             labels,
             datasets: [{
                 label: "Median Price (RM)",
-                data: props.map(p => p.median_price),
-                backgroundColor: COLORS,
-                borderRadius: 6
+                data: chartProps.map(p => p.median_price),
+                backgroundColor: barColors,
+                borderColor: "#0d6efd",
             },
-                {
-            label: "Your Budget",
-            data: props.map(() => userInput.budget), // flat line
-            borderColor: "#dc3545",
-            borderDash: [5, 5], // dashed line
-            pointRadius: 0,
-            fill: false
-        }]
+            {
+                label: "Your Budget",
+                data: chartProps.map(() => userInput.budget),
+                borderColor: "#dc3545",
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false
+            }]
         },
         options: {
             plugins: { legend: { display: false } },
             scales: {
-                y: {
-                    grid: { display: false },
-                    ticks: { callback: v => "RM " + (v / 1000).toFixed(0) + "k" }
-                },
+                y: { grid: { display: false }, ticks: { callback: v => "RM " + (v / 1000).toFixed(0) + "k" } },
                 x: { grid: { display: false }, ticks: { font: { size: 10 } } }
             }
         }
@@ -332,7 +395,187 @@ function appendChat(role, text) {
 document.getElementById("chatInput").addEventListener("keydown", e => {
     if (e.key === "Enter") sendChat();
 });
+
+
+function loadMarketInsights() {
+    const props = result.recommendations.length > 0 
+        ? result.recommendations 
+        : result.closest_matches;
+
+    if (!props || props.length === 0) return;
+
+    const COLORS = ["#0d6efd","#6610f2","#6f42c1","#d63384","#dc3545"];
+
+    // properties by area
+    const areaCounts = {};
+    props.forEach(p => areaCounts[p.area] = (areaCounts[p.area] || 0) + 1);
+
+    new Chart(document.getElementById("chartByState"), {
+        type: "bar",
+        data: {
+            labels: Object.keys(areaCounts),
+            datasets: [{ label: "Properties", data: Object.values(areaCounts), backgroundColor: COLORS, borderRadius: 4 }]
+        },
+        options: {
+            indexAxis: "y",
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: false } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } }
+        }
+    });
+
+    // avg price by property type
+    const typePrices = {};
+    const typeCounts = {};
+    props.forEach(p => {
+        typePrices[p.type] = (typePrices[p.type] || 0) + p.median_price;
+        typeCounts[p.type] = (typeCounts[p.type] || 0) + 1;
+    });
+    const typeLabels = Object.keys(typePrices);
+    const typeAvgs = typeLabels.map(t => Math.round(typePrices[t] / typeCounts[t]));
+
+    new Chart(document.getElementById("chartByType"), {
+        type: "bar",
+        data: {
+            labels: typeLabels,
+            datasets: [{ label: "Avg Price (RM)", data: typeAvgs, backgroundColor: COLORS, borderRadius: 4 }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                y: { grid: { display: false }, ticks: { callback: v => "RM " + (v / 1000).toFixed(0) + "k" } }
+            }
+        }
+    });
+
+    // growth potential
+    const growthOrder = ["HIGH", "MED", "LOW"];
+    const growthColors = { HIGH: "#198754", MED: "#ffc107", LOW: "#dc3545" };
+    const growthCounts = { HIGH: 0, MED: 0, LOW: 0 };
+    props.forEach(p => {
+        if (p.growth_potential in growthCounts) growthCounts[p.growth_potential]++;
+    });
+
+    new Chart(document.getElementById("chartGrowth"), {
+        type: "doughnut",
+        data: {
+            labels: growthOrder,
+            datasets: [{ data: growthOrder.map(g => growthCounts[g]), backgroundColor: growthOrder.map(g => growthColors[g]), borderWidth: 2 }]
+        },
+        options: { plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } }, cutout: "65%" }
+    });
+
+    document.getElementById("growthHigh").textContent = growthCounts["HIGH"];
+    document.getElementById("growthMed").textContent = growthCounts["MED"];
+    document.getElementById("growthLow").textContent = growthCounts["LOW"];
+}
+
+loadMarketInsights();
+
+
+document.getElementById("viewAllBtn").textContent = `View All in ${userInput.state}`;
+
+async function loadAllProperties() {
+    const modal = new bootstrap.Modal(document.getElementById("allPropertiesModal"));
+    document.getElementById("modalTitle").textContent = 
+        `All ${userInput.property_type} in ${userInput.state}`;
+    modal.show();
+
+    document.getElementById("allPropertiesTable").innerHTML = `
+        <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+    `;
+
+    try {
+        const res = await fetch(BACKEND_URL + "/search-all", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                budget: userInput.budget,
+                state: userInput.state,
+                property_type: userInput.property_type
+            })
+        });
+        const data = await res.json();
+
+        if (!data.properties || data.properties.length === 0) {
+            document.getElementById("allPropertiesTable").innerHTML = `
+                <p class="text-muted text-center">No properties found.</p>
+            `;
+            return;
+        }
+
+        const rows = data.properties.map(p => {
+            const inBudget = p.median_price <= userInput.budget;
+            return `
+                <tr class="${inBudget ? "table-success" : ""}">
+                    <td>${p.township}</td>
+                    <td>${p.area}</td>
+                    <td>RM ${p.median_price.toLocaleString()}</td>
+                    <td>RM ${p.median_psf}</td>
+                    <td>${p.tenure ?? "—"}</td>
+                    <td>
+                        <span class="badge ${
+                            p.growth_potential === "HIGH" ? "bg-success" :
+                            p.growth_potential === "MED" ? "bg-warning text-dark" : "bg-danger"
+                        }">${p.growth_potential ?? "—"}</span>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+
+        document.getElementById("allPropertiesTable").innerHTML = `
+            <p class="text-muted small mb-2">
+                <span class="badge bg-success">Green</span> = within your budget of 
+                <strong>RM ${userInput.budget.toLocaleString()}</strong>
+                · ${data.properties.length} properties found
+            </p>
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle" style="font-size:0.85rem">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Township</th>
+                            <th>Area</th>
+                            <th>Median Price</th>
+                            <th>PSF</th>
+                            <th>Tenure</th>
+                            <th>Growth</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        `;
+
+    } catch (e) {
+        document.getElementById("allPropertiesTable").innerHTML = `
+            <p class="text-danger text-center">Failed to load properties.</p>
+        `;
+    }
+}
+
+document.getElementById("viewAllBtn").addEventListener("click", loadAllProperties);
+
+
 </script>
+
+<div class="modal fade" id="allPropertiesModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content rounded-4">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="modalTitle">All Properties</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="allPropertiesTable">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 </body>
 </html>
