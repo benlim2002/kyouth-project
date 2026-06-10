@@ -14,4 +14,4 @@ COPY data ./data
 
 EXPOSE 8080
 
-CMD ["uv", "run", "uvicorn", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8080", "main:app"]
+CMD sh -c "uv run uvicorn main:app --app-dir src --host 0.0.0.0 --port $PORT"

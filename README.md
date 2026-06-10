@@ -109,7 +109,7 @@ http://localhost:8000
 Backend API:
 
 ```text
-http://localhost:8080/search
+http://localhost:8080
 ```
 
 ---
