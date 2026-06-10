@@ -46,7 +46,7 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "data" / "img")), name="static")
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.1-flash-lite"
 
 class SearchRequest(BaseModel):
     budget: float
@@ -160,7 +160,7 @@ def get_properties(
 @app.post("/search")
 async def search(body: SearchRequest):
     logging.info(f"SEARCH | budget={body.budget}, state={body.state}, type={body.property_type}")
-
+    
     properties = filter_properties(
         budget=body.budget,
         state=body.state,
@@ -168,21 +168,91 @@ async def search(body: SearchRequest):
     )
 
     if not properties:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT township, area, state, type, tenure,
+                   median_price, median_psf, transactions,
+                   growth_potential, tags, amenities
+            FROM properties
+            WHERE LOWER(state) = LOWER(?) AND LOWER(type) = LOWER(?)
+            AND median_price IS NOT NULL
+            ORDER BY ABS(median_price - ?) ASC
+            LIMIT 4
+        """, (body.state, body.property_type, body.budget))
+        closest = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        for prop in closest:
+            prop["township"] = prop["township"].title()
+            prop["amenities"] = prop["amenities"].title()
+            prop["perks"] = prop.pop("tags", "") or ""
+
+        closest_summary = "\n".join([
+            f"{p['township']} ({p['area']}) — RM{p['median_price']:,}"
+            for p in closest
+        ])
+        prompt = f"""You are a Malaysian real estate advisor.
+        A user is looking for a {body.property_type} in {body.state} with a budget of RM{body.budget:,.0f}.
+        No properties were found within their budget. Here are the closest options above budget:
+        {closest_summary}
+        
+        Write 1-2 friendly sentences acknowledging they're over budget, but suggest these could still be worth considering. Be concise and encouraging.
+        """
+        ai_explanation = prompt_model(MODEL, prompt)
+
         return {
-        "recommendations": [],
-        "ai_explanation": "No matching properties found. Try increasing your budget or changing the property type."
-    }
+            "recommendations": [],
+            "closest_matches": closest,
+            "ai_explanation": ai_explanation  # replaces the hardcoded string
+        }
 
     ranked = rank_properties(properties, budget=body.budget, top_n=5)
 
-    # rename tags to perks to match frontend
+    # pad with over-budget properties if fewer than 5
+    if len(ranked) < 5:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        existing_townships = [p["township"] for p in ranked]
+        placeholders = ",".join("?" * len(existing_townships))
+
+        cursor.execute(f"""
+            SELECT township, area, state, type, tenure,
+                   median_price, median_psf, transactions,
+                   growth_potential, tags, amenities
+            FROM properties
+            WHERE LOWER(state) = LOWER(?)
+            AND LOWER(type) = LOWER(?)
+            AND median_price > ?
+            AND township NOT IN ({placeholders})
+            ORDER BY median_price ASC
+            LIMIT ?
+        """, (body.state, body.property_type, body.budget,
+              *existing_townships, 5 - len(ranked)))
+
+        extras = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+
+        for prop in extras:
+            prop["township"] = prop["township"].title()
+            prop["amenities"] = prop["amenities"].title()
+            prop["perks"] = prop.pop("tags", "") or ""
+            prop["score"] = None  # marks as over-budget
+
+        ranked.extend(extras)
+
     for prop in ranked:
+        prop["township"] = prop["township"].title()
+        prop["amenities"] = prop["amenities"].title()
         prop["perks"] = prop.pop("tags", "") or ""
 
     ai_explanation = build_ai_explanation(ranked, body.budget, body.state, body.property_type)
 
     return {
         "recommendations": ranked,
+        "closest_matches": [],
         "ai_explanation": ai_explanation
     }
 
@@ -231,9 +301,50 @@ def get_chart_data():
         "by_growth": by_growth,
     }
 
+
 @app.post("/ask")
 def ask(body: AskRequest):
     if not body.query.strip():
         return {"answer": "Please ask a question."}
     answer = prompt_model(MODEL, body.query)
     return {"answer": answer}
+
+
+@app.get("/property-types")
+def get_property_types(state: str):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT type FROM properties
+        WHERE LOWER(state) = LOWER(?)
+        AND type IS NOT NULL
+    """, (state,))
+    
+    raw_types = [row["type"] for row in cursor.fetchall()]
+    conn.close()
+
+    # split combined types and deduplicate
+    split_types = set()
+    for t in raw_types:
+        for part in t.split(","):
+            split_types.add(part.strip())
+
+    valid_types = {"Flat", "Apartment", "Condominium", "Terrace House", 
+                   "Cluster House", "Semi D", "Bungalow", "Town House"}
+    
+    result = sorted(split_types & valid_types)
+    return {"property_types": result}
+
+@app.post("/search-all")
+async def search_all(body: SearchRequest):
+    properties = filter_properties(
+        budget=body.budget,
+        state=body.state,
+        property_type=body.property_type
+    )
+    for prop in properties:
+        prop["township"] = prop["township"].title()
+        prop["amenities"] = prop["amenities"].title()
+        prop["perks"] = prop.pop("tags", "") or ""
+    return {"properties": properties}

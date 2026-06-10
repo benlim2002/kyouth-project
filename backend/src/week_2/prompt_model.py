@@ -1,8 +1,10 @@
 
+import logging
 import os
 from google import genai
 from dotenv import load_dotenv
 import requests
+import time
 from google.genai import types
 
 SUPPORTED_MODELS = { 
@@ -14,43 +16,49 @@ SUPPORTED_MODELS = {
 					}
 SUPPORTED_LOCAL_MODELS = {"deepseek-r1:1.5b", "phi3:latest", "gemma4:31b-cloud"}
 
-def prompt_gemini(model: str, prompt: str) -> str:
+import time
 
-	load_dotenv(override=True)
+def prompt_gemini(model: str, prompt: str, retries=5, delay=3) -> str:
+    load_dotenv(override=True)
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        return "Error: GOOGLE_API_KEY environment variable not set."
+    
+    if not prompt or not prompt.strip():
+        return "Error: Prompt is empty."
 
-	# ensure the API key is set in the environment variables
-	api_key = os.getenv("GOOGLE_API_KEY")
+    selected_model = "gemini-2.5-flash"
+    if model in SUPPORTED_MODELS:
+        selected_model = model
 
-	if not api_key:
-		return "Error: GOOGLE_API_KEY environment variable not set."
-	
-	if not prompt or not prompt.strip():
-		return "Error: Prompt is empty."
+    client = genai.Client(api_key=api_key)
 
-	# set default model if provided model is not supported
-	selected_model = "gemini-2.5-flash"
+    for attempt in range(retries):
+        try:
+            response = client.models.generate_content(
+                model=selected_model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=8192
+                )
+            )
+            if response and response.text:
+                return response.text
+            else:
+                return "No text response received from the model."
 
-	if model in SUPPORTED_MODELS:
-		selected_model = model
+        except Exception as e:
+            error_str = str(e)
+            if "503" in error_str or "UNAVAILABLE" in error_str:
+                logging.warning(f"Model unavailable, retrying in {delay}s (attempt {attempt + 1}/{retries})")
+                time.sleep(delay)
+                delay *= 2  # 3s → 6s → 12s → 24s → 48s
+            else:
+                return f"An error occurred while generating content: {error_str}"
 
-	# initialize the GenAI client and make the API call
-	client = genai.Client(api_key=api_key)
+    return "The model is currently busy after several retries. Please try again later."
 
-	# generate content
-	response = client.models.generate_content(
-    model=selected_model,
-    contents=prompt,
-    config=types.GenerateContentConfig(
-        #tools=[types.Tool(google_search=types.GoogleSearch())],
-		max_output_tokens=8192
-    )
-)
-	# return the generated text if available, otherwise return an error message
-	if response and response.text:
-		return response.text
-	else:
-		return "No text response received from the model."
-	
+
 def prompt_local_model(model: str, prompt: str) -> str:
 	# define the URL for the local model API
 	url = "http://localhost:11434/api/generate"
