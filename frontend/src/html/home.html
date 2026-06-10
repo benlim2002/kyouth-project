@@ -166,6 +166,20 @@
                         </select>
                     </div>
 
+                    <div class="mb-4">
+                        <label for="priority" class="form-label">
+                            What matters most?
+                        </label>
+
+                        <select class="form-select" id="priority" required>
+                            <option selected disabled value="">Select your priority</option>
+                            <option value="balanced">Balanced Recommendation</option>
+                            <option value="lowest_price">Lowest Price</option>
+                            <option value="market_activity">Most Active Market</option>
+                            <option value="growth_potential">Growth Potential</option>
+                        </select>
+                    </div>
+
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary btn-lg">
                             Find Properties
@@ -240,7 +254,8 @@ form.addEventListener("submit", async function (event) {
     const userInput = {
         budget: Number(document.getElementById("budget").value),
         state: document.getElementById("state").value,
-        property_type: document.getElementById("propertyType").value
+        property_type: document.getElementById("propertyType").value,
+        priority: document.getElementById("priority").value
     };
 
     localStorage.setItem("userInput", JSON.stringify(userInput));
@@ -277,7 +292,8 @@ form.addEventListener("submit", async function (event) {
     const userInput = {
         budget: Number(document.getElementById("budget").value),
         state: document.getElementById("state").value,
-        property_type: document.getElementById("propertyType").value
+        property_type: document.getElementById("propertyType").value,
+        priority: document.getElementById("priority").value
     };
 
     localStorage.setItem("userInput", JSON.stringify(userInput));

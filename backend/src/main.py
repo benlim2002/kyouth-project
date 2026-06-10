@@ -52,12 +52,13 @@ class SearchRequest(BaseModel):
     budget: float
     state: str
     property_type: str
+    priority: str
 
 class AskRequest(BaseModel):
     query: str
 
 
-def build_ai_explanation(ranked: list[dict], budget: float, state: str, property_type: str) -> str:
+def build_ai_explanation(ranked: list[dict], budget: float, state: str, property_type: str, priority: str) -> str:
     if not ranked:
         return "No matching properties were found for your criteria."
 
@@ -67,7 +68,7 @@ def build_ai_explanation(ranked: list[dict], budget: float, state: str, property
         summary_lines += f"{i+1}. {prop['township']} ({prop['area']}) — RM{prop['median_price']:,}, Score: {prop['score']}/100, Amenities: {prop['amenities']}\n"
 
     prompt = f"""You are a Malaysian real estate advisor.
-    A user is looking for a {property_type} in {state} with a budget of RM{budget:,.0f}.
+    A user is looking for a {property_type} in {state} with a budget of RM{budget:,.0f}, and has selected '{priority}' as their priority.
 
     Here are the top recommended properties:
     {summary_lines}
@@ -159,12 +160,12 @@ def get_properties(
 
 @app.post("/search")
 async def search(body: SearchRequest):
-    logging.info(f"SEARCH | budget={body.budget}, state={body.state}, type={body.property_type}")
+    logging.info(f"SEARCH | budget={body.budget}, state={body.state}, type={body.property_type}, priority={body.priority}")
     
     properties = filter_properties(
         budget=body.budget,
         state=body.state,
-        property_type=body.property_type
+        property_type=body.property_type,
     )
 
     if not properties:
@@ -207,7 +208,7 @@ async def search(body: SearchRequest):
             "ai_explanation": ai_explanation  # replaces the hardcoded string
         }
 
-    ranked = rank_properties(properties, budget=body.budget, top_n=5)
+    ranked = rank_properties(properties, budget=body.budget, priority=body.priority, top_n=5)
 
     # pad with over-budget properties if fewer than 5
     if len(ranked) < 5:
@@ -248,7 +249,7 @@ async def search(body: SearchRequest):
         prop["amenities"] = prop["amenities"].title()
         prop["perks"] = prop.pop("tags", "") or ""
 
-    ai_explanation = build_ai_explanation(ranked, body.budget, body.state, body.property_type)
+    ai_explanation = build_ai_explanation(ranked, body.budget, body.state, body.property_type, body.priority)
 
     return {
         "recommendations": ranked,
