@@ -119,6 +119,41 @@
         .badge {
             font-weight: 500;
         }
+        .hero-banner {
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+            padding: 3rem 2rem;
+            color: white;
+            background:
+                linear-gradient(rgba(81, 98, 128, 0.65), rgba(13, 35, 70, 0.65)),
+                url("https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 18px 40px rgba(0,0,0,0.18);
+        }
+
+        .hero-banner h1 {
+            font-family: Georgia, serif;
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .hero-banner p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .filter-summary {
+            font-size: 0.78rem;
+        }
+
+        .filter-summary .badge {
+            font-size: 0.75rem;
+            padding: 0.45rem 0.65rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 
@@ -126,20 +161,16 @@
 
 <div class="container py-5">
 
-    <div class="mb-4 p-4 rounded-4" style="background: linear-gradient(135deg, #e7f0ff, #f8f9fa)">
-        <h1 class="fw-bold mb-1">Your Property Recommendations</h1>
-        <p class="text-muted mb-0">Powered by real Malaysian property data</p>
+   <div class="hero-banner mb-3 text-center">
+        <h1 class="mb-2">Your Property Recommendations</h1>
+        <p class="mb-0">Powered by real Malaysian property data</p>
     </div>
 
     <!-- User Input Summary -->
-   <div class="mb-4">
-		<p class="text-muted mb-2">
-			Recommendations based on your preferences
-		</p>
-
-		<div id="userInputSummary" class="d-flex flex-wrap gap-2 p-3 bg-white rounded-4 shadow-sm">
-		</div>
-	</div>
+    <div class="mb-4 filter-summary">
+        <span class="text-muted me-2">Preferences:</span>
+        <span id="userInputSummary" class="d-inline-flex flex-wrap gap-2 align-items-center"></span>
+    </div>
 
     <!-- Top Recommendation -->
     <div id="topRecommendation"></div>
@@ -254,20 +285,20 @@ const BACKEND_URL = "{{ backend_url }}";
 
 /* Show user input */
 document.getElementById("userInputSummary").innerHTML = `
-    <span class="badge rounded-pill text-bg-primary fs-6 fw-bold">
-        Budget: RM ${userInput.budget.toLocaleString()}
+    <span class="badge rounded-pill bg-light text-dark border">
+        Budget RM ${userInput.budget.toLocaleString()}
     </span>
 
-    <span class="badge rounded-pill text-bg-light border fs-6 fw-bold text-dark">
+    <span class="badge rounded-pill bg-light text-dark border">
         ${userInput.state}
     </span>
 
-    <span class="badge rounded-pill text-bg-light border fs-6 fw-bold text-dark">
+    <span class="badge rounded-pill bg-light text-dark border">
         ${userInput.property_type}
     </span>
 
-    <span class="badge rounded-pill text-bg-light border fs-6 fw-bold text-dark">
-        Priority: ${userInput.priority.replace("_", " ")}
+    <span class="badge rounded-pill bg-light text-dark border">
+        ${userInput.priority.replace("_", " ")}
     </span>
 `;
 
