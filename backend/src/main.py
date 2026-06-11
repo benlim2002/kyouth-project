@@ -42,7 +42,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000"],
+    allow_origins=["http://localhost:8000", "https://propguide-kyouth.up.railway.app"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
