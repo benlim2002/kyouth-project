@@ -2,7 +2,10 @@
 import logging
 import sqlite3
 import importlib.util
+import requests
+import os
 from pathlib import Path
+from typing import Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -52,7 +55,7 @@ class SearchRequest(BaseModel):
     budget: float
     state: str
     property_type: str
-    priority: str
+    priority: Optional[str] = None
 
 class AskRequest(BaseModel):
     query: str
@@ -208,7 +211,7 @@ async def search(body: SearchRequest):
             "ai_explanation": ai_explanation  # replaces the hardcoded string
         }
 
-    ranked = rank_properties(properties, budget=body.budget, priority=body.priority, top_n=5)
+    ranked = rank_properties(properties, budget=body.budget, priority=body.priority, top_n=15)
 
     # pad with over-budget properties if fewer than 5
     if len(ranked) < 5:

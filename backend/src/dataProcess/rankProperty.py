@@ -86,7 +86,7 @@ def score_property(row: dict, budget: float, priority: str = "balanced") -> int:
     return round(max(0, min(score, 100)))
 
 
-def rank_properties(properties: list[dict], budget: float, priority: str = "balanced", top_n: int = 5) -> list[dict]:
+def rank_properties(properties: list[dict], budget: float, priority: str = "balanced", top_n: int = 15) -> list[dict]:
 
     if not properties:
         logging.warning("RANK | ⚠️ No properties to rank")

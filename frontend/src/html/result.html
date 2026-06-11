@@ -8,10 +8,20 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         body {
             background-color: #f8f9fa;
+            background-image: 
+                radial-gradient(at 20% 20%, rgba(13, 110, 253, 0.06) 0px, transparent 50%),
+                radial-gradient(at 80% 80%, rgba(25, 135, 84, 0.05) 0px, transparent 50%);
+        }
+        
+        .btn-primary {
+            padding: 0.75rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
         }
 
         .top-card {
@@ -23,12 +33,91 @@
             border-radius: 16px;
         }
 
+        .normal-card,
+        .top-card {
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 24px rgba(13, 110, 253, 0.12);
+        }
+
+        .normal-card:hover,
+        .top-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 32px rgba(0,0,0,0.15) !important;
+        }
         .score-badge {
             font-size: 0.9rem;
         }
 
         .section-title {
             font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0d6efd;
+        }
+
+        .score-bar {
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #198754, #20c997);
+            border-radius: 999px;
+        }
+
+        .recommendation-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: cardAppear 0.5s ease forwards;
+        }
+
+        @keyframes cardAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+        }
+
+        .amenity-chip {
+            display: inline-block;
+            padding: 6px 12px;
+            margin: 4px;
+            border-radius: 999px;
+            background: #eef4ff;
+            color: #2563eb;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .confidence-high {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .confidence-medium {
+            background: #fff3cd;
+            color: #664d03;
+        }
+
+        .confidence-low {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .badge {
+            font-weight: 500;
         }
     </style>
 </head>
@@ -37,8 +126,9 @@
 
 <div class="container py-5">
 
-    <div class="mb-4">
-        <h1 class="fw-bold">Your Property Recommendations</h1>
+    <div class="mb-4 p-4 rounded-4" style="background: linear-gradient(135deg, #e7f0ff, #f8f9fa)">
+        <h1 class="fw-bold mb-1">Your Property Recommendations</h1>
+        <p class="text-muted mb-0">Powered by real Malaysian property data</p>
     </div>
 
     <!-- User Input Summary -->
@@ -47,7 +137,7 @@
 			Recommendations based on your preferences
 		</p>
 
-		<div id="userInputSummary" class="d-flex flex-wrap gap-2">
+		<div id="userInputSummary" class="d-flex flex-wrap gap-2 p-3 bg-white rounded-4 shadow-sm">
 		</div>
 	</div>
 
@@ -61,7 +151,7 @@
     <h4 class="section-title mt-5 mb-3" id="chartTitle">Property Comparison</h4>
     <div class="row mb-4" id="chartSection">
         <div class="col-md-12 mb-6">
-            <div class="card shadow-sm rounded-4 p-3">
+            <div class="card rounded-4 p-3">
                 <p class="text-muted small mb-2">Median Price Comparison (RM)</p>
                 <canvas id="chartPrices" height="260"></canvas>
             </div>
@@ -95,12 +185,12 @@
 
             <!-- Left side: 2 charts stacked -->
             <div class="col-md-8 d-flex flex-column">
-                <div class="card shadow-sm rounded-4 p-3 mb-3 flex-fill">
+                <div class="card rounded-4 p-3 mb-3 flex-fill">
                     <p class="text-muted small mb-2">Areas in Results</p>
-                    <canvas id="chartByState" height="140"></canvas>
+                    <canvas id="chartByState" height="240"></canvas>
                 </div>
 
-                <div class="card shadow-sm rounded-4 p-3 flex-fill">
+                <div class="card rounded-4 p-3 flex-fill">
                     <p class="text-muted small mb-2">Avg. Price by Type in Results</p>
                     <canvas id="chartByType" height="140"></canvas>
                 </div>
@@ -108,7 +198,7 @@
 
             <!-- Right side: growth chart -->
             <div class="col-md-4 d-flex">
-                <div class="card shadow-sm rounded-4 p-3 w-100">
+                <div class="card rounded-4 p-3 w-100">
                     <p class="text-muted small mb-2">Growth Potential</p>
                     <canvas id="chartGrowth"></canvas>
 
@@ -135,7 +225,7 @@
     </div>
 
     <!-- AI Explanation -->
-    <div class="card shadow-sm mt-5 border-primary">
+    <div class="card mt-5 border-primary" style="border-radius:16px; box-shadow: 0 4px 20px rgba(13,110,253,0.1)!important">
         <div class="card-body">
             <h4 class="section-title">AI Decision Explanation</h4>
             <p id="aiExplanation" class="mb-0"></p>
@@ -164,26 +254,32 @@ const BACKEND_URL = "{{ backend_url }}";
 
 /* Show user input */
 document.getElementById("userInputSummary").innerHTML = `
-    <span class="badge rounded-pill text-bg-light border fs-6">
+    <span class="badge rounded-pill text-bg-primary fs-6 fw-bold">
         Budget: RM ${userInput.budget.toLocaleString()}
     </span>
 
-    <span class="badge rounded-pill text-bg-light border fs-6">
+    <span class="badge rounded-pill text-bg-light border fs-6 fw-bold text-dark">
         ${userInput.state}
     </span>
 
-    <span class="badge rounded-pill text-bg-light border fs-6">
+    <span class="badge rounded-pill text-bg-light border fs-6 fw-bold text-dark">
         ${userInput.property_type}
     </span>
 
-    <span class="badge rounded-pill text-bg-light border fs-6">
-         Priority: ${userInput.priority.replace("_", " ")}
+    <span class="badge rounded-pill text-bg-light border fs-6 fw-bold text-dark">
+        Priority: ${userInput.priority.replace("_", " ")}
     </span>
 `;
 
+function getPropertyLinks(township, state) {
+    const query = `${township} ${state}`.toLowerCase().replace(/\s+/g, '+');
+    return {
+        guru: `https://www.propertyguru.com.my/property-for-sale?listingType=sale&page=1&isCommercial=false&_freetextDisplay=${query}&freetext=${query}&maxPrice=${userInput.budget}`
+    };
+}
 
 /* Top recommendation */
-const topProperty = result.recommendations[0];
+const topProperty = result.recommendations[0]; 
 
 if (!topProperty) {
     const closest = result.closest_matches;
@@ -207,7 +303,7 @@ if (!topProperty) {
             <div class="row">
                 ${closest.map(p => `
                     <div class="col-md-6 mb-3">
-                        <div class="card shadow-sm normal-card h-100">
+                        <div class="card normal-card h-100">
                             <div class="card-body">
                                 <h5 class="fw-bold">${p.township}</h5>
                                 <p class="text-muted">${p.area}, ${p.state} · ${p.type}</p>
@@ -227,22 +323,56 @@ if (!topProperty) {
 
 } else {
 
+
 document.getElementById("topRecommendation").innerHTML = `
     <h4 class="section-title mb-3">Top Recommendation</h4>
 
-    <div class="card shadow top-card">
+    <div class="card top-card animate-card" style="animation-delay:5s">
         <div class="card-body p-4">
 
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <div>
-                    <span class="badge bg-primary mb-2">Rank #1</span>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-primary">Rank #1</span>
+                        <span class="badge ${
+                            topProperty.score >= 85
+                                ? "confidence-high"
+                                : topProperty.score >= 70
+                                ? "confidence-medium"
+                                : "confidence-low"
+                        }">
+                            AI Confidence:
+                            ${
+                                topProperty.score >= 85
+                                    ? "High"
+                                    : topProperty.score >= 70
+                                    ? "Medium"
+                                    : "Low"
+                            }
+                        </span>
+                    </div>
                     <h3 class="fw-bold">${topProperty.township}</h3>
                     <p class="text-muted mb-0">${topProperty.area}, ${topProperty.state} · ${topProperty.type}</p>
                 </div>
 
-                <span class="badge bg-success score-badge">
-                    Score: ${topProperty.score}/100
-                </span>
+                <div class="d-flex flex-column align-items-end gap-2">
+                    <div class="w-100 text-end">
+                        <span class="badge bg-success score-badge fw-bold">
+                            ${topProperty.score}/100
+                        </span>
+
+                        <div class="score-bar mt-2">
+                            <div
+                                class="score-fill"
+                                style="width:${topProperty.score}%">
+                            </div>
+                        </div>
+                    </div>
+                    <a href="${getPropertyLinks(topProperty.township, topProperty.state).guru}"
+                    target="_blank" rel="noopener" style="white-space:nowrap; color:#0d6efd; text-decoration:none; font-size:0.85rem; font-weight:600;">
+                        [PropertyGuru ↗]
+                    </a>
+                </div>
             </div>
 
             <div class="row mt-4">
@@ -261,14 +391,23 @@ document.getElementById("topRecommendation").innerHTML = `
                     <p>${topProperty.perks}</p>
                 </div>
 
-                <div class="col-md-12">
-                    <strong>Amenities</strong>
-                    <p>${topProperty.amenities}</p>
+                <div class="mt-2">
+                    <strong>Amenities: </strong>
+                    <div class="mt-2">
+                        ${topProperty.amenities
+                            .split(",")
+                            .map(a => `<a href="https://www.google.com/search?q=${encodeURIComponent(a.trim() + ' ' + topProperty.area + ' ' + topProperty.state)}" 
+                                target="_blank" rel="noopener" style="text-decoration:none;">
+                                <span class="amenity-chip">${a.trim()} ↗</span>
+                            </a>`)
+                            .join("")}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 `;
+
 
 /* Other recommendations */
 const otherDiv = document.getElementById("otherRecommendations");
@@ -276,20 +415,39 @@ const otherDiv = document.getElementById("otherRecommendations");
 result.recommendations.slice(1, 3).forEach((property, index) => {
     otherDiv.innerHTML += `
         <div class="col-md-6 mb-3">
-            <div class="card shadow-sm normal-card h-100">
+            <div class="card normal-card animate-card h-100" style="animation-delay:${index * 0.15}s">
                 <div class="card-body">
-
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between align-items-start">
                         <h5 class="fw-bold">
                             Rank #${index + 2}: ${property.township}
                         </h5>
-
-                        <span class="badge bg-secondary">
-                            ${property.score}/100
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${
+                                property.score >= 85
+                                    ? "confidence-high"
+                                    : property.score >= 70
+                                    ? "confidence-medium"
+                                    : "confidence-low"
+                            }">
+                                ${
+                                    property.score >= 85
+                                        ? "High Confidence"
+                                        : property.score >= 70
+                                        ? "Medium Confidence"
+                                        : "Low Confidence"
+                                }
+                            </span>
+                            <span class="badge bg-secondary">${property.score}/100</span>
+                        </div>
                     </div>
 
-                    <p class="text-muted"> ${property.area}, ${property.state} · ${property.type}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <p class="text-muted mb-0"> ${property.area}, ${property.state} · ${property.type}</p>
+                        <a href="${getPropertyLinks(property.township, property.state).guru}"
+                        target="_blank" rel="noopener" style="white-space:nowrap; color:#0d6efd; text-decoration:none; font-size:0.85rem; font-weight:600;">
+                            [PropertyGuru ↗]
+                        </a>
+                    </div>
 
                     <p class="mb-1">
                         <strong>Median Price:</strong>
@@ -306,10 +464,18 @@ result.recommendations.slice(1, 3).forEach((property, index) => {
                         ${property.perks}
                     </p>
 
-                    <p class="mb-0">
-                        <strong>Amenities:</strong>
-                        ${property.amenities}
-                    </p>
+                    <div class="mt-2">
+                        <strong>Amenities: </strong>
+                        <div class="mt-2">
+                            ${property.amenities
+                                .split(",")
+                                .map(a => `<a href="https://www.google.com/search?q=${encodeURIComponent(a.trim() + ' ' + property.area + ' ' + property.state)}" 
+                                    target="_blank" rel="noopener" style="text-decoration:none;">
+                                    <span class="amenity-chip">${a.trim()} ↗</span>
+                                </a>`)
+                                .join("")}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -320,30 +486,25 @@ result.recommendations.slice(1, 3).forEach((property, index) => {
 document.getElementById("aiExplanation").textContent = result.ai_explanation;
 }
 
-const chartProps = (result.recommendations && result.recommendations.length > 0)
-    ? result.recommendations.slice(0, 5)
-    : (result.closest_matches && result.closest_matches.length > 0)
-        ? result.closest_matches.slice(0, 5)
-        : null;
 
-if (chartProps) {
-    document.getElementById("chartTitle").style.display = "";
-    document.getElementById("chartSection").style.display = "";
+const chartProps = result.recommendations || [];
+if (chartProps.length === 0);
 
-    const labels = chartProps.map(p => p.township);
-    const barColors = chartProps.map(p =>
-        p.score === null || p.score === undefined ? "#adb5bd" : "#0d6efd"
-    );
+const top3 = chartProps.slice(0, 3);
+const top3Townships = new Set(top3.map(p => p.township));
+const labels = chartProps.map(p => p.township);
 
-    new Chart(document.getElementById("chartPrices"), {
-        type: "line",
-        data: {
-            labels,
-            datasets: [{
+new Chart(document.getElementById("chartPrices"), {
+    type: "line",
+    data: {
+        labels,
+        datasets: [
+            {
                 label: "Median Price (RM)",
                 data: chartProps.map(p => p.median_price),
-                backgroundColor: barColors,
                 borderColor: "#0d6efd",
+                pointBackgroundColor: "#0d6efd",
+                pointRadius: 4,
             },
             {
                 label: "Your Budget",
@@ -352,26 +513,37 @@ if (chartProps) {
                 borderDash: [5, 5],
                 pointRadius: 0,
                 fill: false
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { grid: { display: false }, ticks: { callback: v => "RM " + (v / 1000).toFixed(0) + "k" } },
-                x: { grid: { display: false }, ticks: { font: { size: 10 } } }
             }
+        ]
+    },
+    options: {
+        plugins: {
+            legend: {
+                display: true,
+                labels: { usePointStyle: true, font: { size: 11 } }
+            }
+        },
+        scales: {
+            y: { grid: { display: false }, ticks: { callback: v => "RM " + (v / 1000).toFixed(0) + "k" } },
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
         }
-    });
-}
+    }
+});
 
 
 const chatHistory = [];
 
 async function sendChat() {
     const input = document.getElementById("chatInput");
+    const btn = document.querySelector("button[onclick='sendChat()']");
     const query = input.value.trim();
     if (!query) return;
     input.value = "";
+
+    // disable while waiting
+    input.disabled = true;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span>`;
 
     appendChat("user", query);
     chatHistory.push({ role: "user", content: query });
@@ -385,6 +557,13 @@ async function sendChat() {
 
     Recommendations:
     ${context}
+
+    STRICT RULES:
+    - You can ONLY answer questions about the properties listed above (prices, locations, amenities, growth potential, comparisons).
+    - You CANNOT book viewings, contact agents, arrange appointments, or take any real-world actions.
+    - If asked to do anything outside property data and comparisons, politely clarify you are a data assistant only and suggest they visit PropertyGuru or contact an agent directly.
+    - Do NOT ask for personal details like name, phone number, or contact info.
+    - Keep answers short and factual.
 
     Conversation:
     ${chatHistory.map(m => `${m.role}: ${m.content}`).join("\n")}
@@ -403,6 +582,12 @@ async function sendChat() {
         appendChat("assistant", answer);
     } catch (e) {
         appendChat("assistant", "Failed to get response.");
+    } finally {
+        // re-enable after response
+        input.disabled = false;
+        btn.disabled = false;
+        btn.innerHTML = `Ask`;
+        input.focus();
     }
 }
 
@@ -435,24 +620,41 @@ document.getElementById("chatInput").addEventListener("keydown", e => {
 });
 
 
-function loadMarketInsights() {
-    const props = result.recommendations.length > 0 
-        ? result.recommendations 
-        : result.closest_matches;
+async function loadMarketInsights() {
+    let props;
+    try {
+        const res = await fetch(BACKEND_URL + "/search-all", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                budget: userInput.budget,
+                state: userInput.state,
+                property_type: userInput.property_type
+            })
+        });
+        const data = await res.json();
+        props = data.properties;
+    } catch (e) {
+        console.error("Failed to load market insights", e);
+        return;
+    }
 
     if (!props || props.length === 0) return;
 
+    // properties by area
     const COLORS = ["#0d6efd","#6610f2","#6f42c1","#d63384","#dc3545"];
 
-    // properties by area
+    // Areas in Results → chartByState
     const areaCounts = {};
     props.forEach(p => areaCounts[p.area] = (areaCounts[p.area] || 0) + 1);
+
+    const sortedAreas = Object.entries(areaCounts).sort((a, b) => b[1] - a[1]);
 
     new Chart(document.getElementById("chartByState"), {
         type: "bar",
         data: {
-            labels: Object.keys(areaCounts),
-            datasets: [{ label: "Properties", data: Object.values(areaCounts), backgroundColor: COLORS, borderRadius: 4 }]
+            labels: sortedAreas.map(a => a[0]),
+            datasets: [{ label: "Properties", data: sortedAreas.map(a => a[1]), backgroundColor: COLORS, borderRadius: 4 }]
         },
         options: {
             indexAxis: "y",
@@ -461,21 +663,21 @@ function loadMarketInsights() {
         }
     });
 
-    // avg price by property type
-    const typePrices = {};
-    const typeCounts = {};
+    // Avg Price by Area → chartByType
+    const areaPrices = {};
+    const areaCountsForAvg = {};
     props.forEach(p => {
-        typePrices[p.type] = (typePrices[p.type] || 0) + p.median_price;
-        typeCounts[p.type] = (typeCounts[p.type] || 0) + 1;
+        areaPrices[p.area] = (areaPrices[p.area] || 0) + p.median_price;
+        areaCountsForAvg[p.area] = (areaCountsForAvg[p.area] || 0) + 1;
     });
-    const typeLabels = Object.keys(typePrices);
-    const typeAvgs = typeLabels.map(t => Math.round(typePrices[t] / typeCounts[t]));
+    const areaLabels = Object.keys(areaPrices);
+    const areaAvgs = areaLabels.map(a => Math.round(areaPrices[a] / areaCountsForAvg[a]));
 
     new Chart(document.getElementById("chartByType"), {
         type: "bar",
         data: {
-            labels: typeLabels,
-            datasets: [{ label: "Avg Price (RM)", data: typeAvgs, backgroundColor: COLORS, borderRadius: 4 }]
+            labels: areaLabels,
+            datasets: [{ label: "Avg Price (RM)", data: areaAvgs, backgroundColor: COLORS, borderRadius: 4 }]
         },
         options: {
             plugins: { legend: { display: false } },
@@ -485,6 +687,9 @@ function loadMarketInsights() {
             }
         }
     });
+
+    document.querySelector('#chartByType').closest('.card').querySelector('p').textContent =
+        `Avg. Price by Area in ${userInput.state}`;
 
     // growth potential
     const growthOrder = ["HIGH", "MED", "LOW"];
@@ -585,6 +790,14 @@ async function loadAllProperties() {
                             p.growth_potential === "MED" ? "bg-warning text-dark" : "bg-danger"
                         }">${p.growth_potential ?? "—"}</span>
                     </td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <a href="${getPropertyLinks(p.township, p.state).guru}"
+                               target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary flex-fill text-center">
+                                PropertyGuru
+                            </a>
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join("");
@@ -605,6 +818,7 @@ async function loadAllProperties() {
                             <th>PSF</th>
                             <th>Tenure</th>
                             <th>Growth</th>
+                            <th>Links</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
