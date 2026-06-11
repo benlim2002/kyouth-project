@@ -1,3 +1,4 @@
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
@@ -6,9 +7,10 @@ import os
 load_dotenv()
 
 app = FastAPI()
-templates = Jinja2Templates(directory="src/html")
+BASE_DIR = Path(__file__).resolve().parent.parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "src" / "html"))
 
-backend_url = os.getenv("BACKEND_URL")
+backend_url = os.getenv("BACKEND_URL", "")
 
 @app.get("/")
 def landing_page(request: Request):
